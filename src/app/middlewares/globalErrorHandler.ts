@@ -8,13 +8,25 @@ import { handlerDuplicateError } from "../helpers/handleDuplicateError";
 import { handlerValidationError } from "../helpers/handlerValidationError";
 import { handlerZodError } from "../helpers/handlerZodError";
 import { TErrorSources } from "../interfaces/error.types";
+import { deleteFileFromS3 } from "../config/aws.config";
 
-export const globalErrorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
+export const globalErrorHandler = async (err: any, req: Request, res: Response, next: NextFunction) => {
     if (envVars.NODE_ENV === "development") {
         // eslint-disable-next-line no-console
         console.log(err);
     }
+    if (req?.file) {
+        const fileKey = (req.file as any).key;
+        await deleteFileFromS3(fileKey);
+    }
 
+    if (req.files && Array.isArray(req.files) && req.files.length) {
+        const fileKeys = (req.files as Express.Multer.File[]).map(
+            (file: any) => file.key
+        );
+
+        await Promise.all(fileKeys.map((key) => deleteFileFromS3(key)));
+    }
     let errorSources: TErrorSources[] = []
     let statusCode = 500
     let message = "Something Went Wrong!!"

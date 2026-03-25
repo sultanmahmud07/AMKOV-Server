@@ -1,16 +1,19 @@
 import multer from "multer";
-import { CloudinaryStorage } from "multer-storage-cloudinary";
-import { cloudinaryUpload } from "./cloudinary.config";
+import multerS3 from "multer-s3";
+import { s3Client } from "./aws.config";
+import { envVars } from "./env";
 
-
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinaryUpload,
-  params: async (req, file) => {
+const storage = multerS3({
+  s3: s3Client,
+  bucket: envVars.S3_BUCKET_NAME,
+  contentType: multerS3.AUTO_CONTENT_TYPE, // Automatically detects image, pdf, etc.
+  key: function (req, file, cb) {
     const originalName = file.originalname.toLowerCase();
 
     // extract name and extension
     const nameWithoutExt =
       originalName.substring(0, originalName.lastIndexOf(".")) || originalName;
+    const extension = originalName.substring(originalName.lastIndexOf("."));
 
     // sanitize name
     const safeName = nameWithoutExt
@@ -19,19 +22,16 @@ const storage = new CloudinaryStorage({
       .replace(/[^a-z0-9\-]/g, ""); // only keep alphanumeric and -
 
     const uniqueFileName =
+      // "amkov/" + 
       Math.random().toString(36).substring(2) +
       "-" +
       Date.now() +
       "-" +
-      safeName;
-    return {
-      folder: "local_guide", // ✅ Cloudinary folder
-      public_id: uniqueFileName,
-      resource_type: "auto", // good for images, pdf, etc
-    };
+      safeName + 
+      extension; // Re-attach the extension so S3 can serve it correctly
+
+    cb(null, uniqueFileName);
   },
 });
 
-
-
-export const multerUpload = multer({ storage: storage })
+export const multerUpload = multer({ storage: storage });

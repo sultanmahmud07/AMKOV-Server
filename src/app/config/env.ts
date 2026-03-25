@@ -47,12 +47,16 @@ interface EnvConfig {
     REDIS_PORT: string;
     REDIS_USERNAME: string;
     REDIS_PASSWORD: string;
+    AWS_ACCESS_KEY_ID: string;
+    AWS_SECRET_ACCESS_KEY: string;
+    AWS_DEFAULT_REGION: string;
+    S3_BUCKET_NAME: string;
 
 
 }
 
 const loadEnvVariables = (): EnvConfig => {
-    const requiredEnvVariables: string[] =["PORT", "DB_URL", "NODE_ENV", "BCRYPT_SALT_ROUND", "JWT_ACCESS_EXPIRES", "JWT_ACCESS_SECRET", "SUPER_ADMIN_EMAIL", "SUPER_ADMIN_PASSWORD", "JWT_REFRESH_SECRET", "JWT_REFRESH_EXPIRES", "GOOGLE_CLIENT_SECRET", "GOOGLE_CLIENT_ID", "GOOGLE_CALLBACK_URL", "EXPRESS_SESSION_SECRET", "FRONTEND_URL", "SSL_STORE_ID",
+    const requiredEnvVariables: string[] = ["PORT", "DB_URL", "NODE_ENV", "BCRYPT_SALT_ROUND", "JWT_ACCESS_EXPIRES", "JWT_ACCESS_SECRET", "SUPER_ADMIN_EMAIL", "SUPER_ADMIN_PASSWORD", "JWT_REFRESH_SECRET", "JWT_REFRESH_EXPIRES", "GOOGLE_CLIENT_SECRET", "GOOGLE_CLIENT_ID", "GOOGLE_CALLBACK_URL", "EXPRESS_SESSION_SECRET", "FRONTEND_URL", "SSL_STORE_ID",
         "SSL_STORE_PASS",
         "SSL_PAYMENT_API", "SSL_VALIDATION_API", "SSL_SUCCESS_FRONTEND_URL",
         "SSL_FAIL_FRONTEND_URL",
@@ -122,6 +126,10 @@ const loadEnvVariables = (): EnvConfig => {
         REDIS_PORT: process.env.REDIS_PORT as string,
         REDIS_USERNAME: process.env.REDIS_USERNAME as string,
         REDIS_PASSWORD: process.env.REDIS_PASSWORD as string,
+        AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID as string,
+        AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY as string,
+        AWS_DEFAULT_REGION: process.env.AWS_DEFAULT_REGION as string,
+        S3_BUCKET_NAME: process.env.S3_BUCKET_NAME as string,
 
 
     }
