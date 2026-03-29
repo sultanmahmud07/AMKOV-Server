@@ -45,9 +45,10 @@ const getSingleCategory = catchAsync(async (req: Request, res: Response) => {
 
 const updateCategory = catchAsync(async (req: Request, res: Response) => {
     const id = req.params.id;
+      const file = req.file as Express.MulterS3.File;
     const payload: ICategory = {
         ...req.body,
-        thumbnail: req.file?.path
+        thumbnail: file?.location
     }
     const result = await CategoryService.updateCategory(id, payload);
     sendResponse(res, {
