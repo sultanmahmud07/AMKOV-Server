@@ -37,9 +37,9 @@ const getAllCategory = async (query: Record<string, string>) => {
     }
 };
 const getSingleCategory = async (slug: string) => {
-    const division = await Category.findOne({ slug });
+    const category = await Category.findOne({ slug });
     return {
-        data: division,
+        data: category,
     }
 };
 

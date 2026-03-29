@@ -5,6 +5,8 @@ export const createCategorySchema = z.object({
     slug: z.string().min(1),
     thumbnail: z.string().optional(),
     description: z.string().optional(),
+    visibility: z.boolean().optional(),
+    order: z.number().optional()
 });
 
 export const updateCategorySchema = z.object({
@@ -12,4 +14,6 @@ export const updateCategorySchema = z.object({
     slug: z.string().min(1).optional(),
     thumbnail: z.string().optional(),
     description: z.string().optional(),
+    visibility: z.boolean().default(true),
+    order: z.number().optional()
 });
