@@ -1,12 +1,12 @@
 
 import { deleteImageFromCLoudinary } from "../../config/cloudinary.config";
 import { QueryBuilder } from "../../utils/QueryBuilder";
-import { tourSearchableFields } from "./product.constant";
+import { productSearchableFields } from "./product.constant";
 import { IProduct } from "./product.interface";
 import { Product } from "./product.model";
 
 const createProduct = async (payload: IProduct) => {
-    const existingProduct = await Product.findOne({ title: payload.slug });
+    const existingProduct = await Product.findOne({ slug: payload.slug });
     if (existingProduct) {
         throw new Error("A Product with this slug already exists.");
     }
@@ -21,15 +21,15 @@ const getAllProducts = async (query: Record<string, string>) => {
 
     const queryBuilder = new QueryBuilder(Product.find(), query)
 
-    const tours = await queryBuilder
-        .search(tourSearchableFields)
+    const products = await queryBuilder
+        .search(productSearchableFields)
         .filter()
         .sort()
         .fields()
         .paginate()
 
     const [data, meta] = await Promise.all([
-        tours.build(),
+        products.build(),
         queryBuilder.getMeta()
     ])
 

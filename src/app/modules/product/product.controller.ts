@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/consistent-indexed-object-style */
 
 import { Request, Response } from 'express';
 import { catchAsync } from '../../utils/catchAsync';
@@ -6,11 +7,23 @@ import { IProduct } from './product.interface';
 import { ProductService } from './product.service';
 
 const createProduct = catchAsync(async (req: Request, res: Response) => {
-    const files = req.files as Express.MulterS3.File[];
+    // const files = req.files as Express.MulterS3.File[];
+
+    // const payload: IProduct = {
+    //     ...req.body,
+    //     images: files?.map(file => file.location), // ✅ S3 URLs
+    // };
+    // Cast req.files to handle the structure created by multer.fields()
+    const files = req.files as { [fieldname: string]: Express.MulterS3.File[] };
+
+    // Safely extract the arrays (default to empty array if undefined)
+    const galleryFiles = files?.['images'] || [];
+    const featureFiles = files?.['featureImages'] || [];
 
     const payload: IProduct = {
         ...req.body,
-        images: files?.map(file => file.location), // ✅ S3 URLs
+        images: galleryFiles.map(file => file.location), // S3 URLs for Gallery
+        featureImages: featureFiles.map(file => file.location), // S3 URLs for Features tab
     };
     const result = await ProductService.createProduct(payload);
     sendResponse(res, {

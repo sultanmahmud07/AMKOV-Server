@@ -1,21 +1,29 @@
 import { Types } from "mongoose";
 
 export interface IProductVariation {
-  size?: string;   // e.g., L, XL, XXL
-  color?: string;  // e.g., black, green, red
-  stock: number;   // available stock for this variation
-  price: number;   // variation-specific price (optional)
+  size?: string;   
+  color?: string;  // You will use this for "Matte Black / Silver"
+  stock: number;   
+  price?: number;   
+}
+
+export interface ISpecification {
+  name: string;    // e.g., "Sensor Type"
+  value: string;   // e.g., "CMOS"
 }
 
 export interface IProduct {
   name: string;
   slug: string;
-  description?: string;
-  images?: string[];
-  basePrice: number; // default/base price
+  bulletPoints?: string[];      // The short list next to the camera
+  description?: string;         // HTML from TextEditor
+  specifications?: ISpecification[]; // Table data
+  images?: string[];            // Main gallery images
+  featureImages?: string[];     // Images specifically for the Features tab
+  basePrice: number; 
   variations: IProductVariation[];
   category?: Types.ObjectId;
-   deleteImages?: string[]
+  deleteImages?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
