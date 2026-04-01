@@ -4,8 +4,8 @@ import { Types } from "mongoose";
 export interface IBlog {
   title: string;
   slug: string;
-  reference: string;
-  category: Types.ObjectId; // ✅ Reference to Category
+  reference?: string;
+  category?: string;
   metaTitle?: string;
   metaDescription?: string;
   description: string;

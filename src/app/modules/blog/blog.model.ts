@@ -7,7 +7,7 @@ const blogSchema = new Schema<IBlog>(
     title: { type: String, required: true, trim: true },
     slug: { type: String, required: true, unique: true, lowercase: true },
     reference: { type: String, required: true, lowercase: true },
-    category: { type: Schema.Types.ObjectId, ref: "BlogCategory"},
+    category: String,
     metaTitle: String,
     metaDescription: String,
     description: { type: String, required: true },

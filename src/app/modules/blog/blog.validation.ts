@@ -7,7 +7,7 @@ export const createBlogZodSchema = z.object({
     category: z.string().optional(),
     metaTitle: z.string().optional(),
     metaDescription: z.string().optional(),
-    description: z.string().min(10),
+    description: z.string().min(10, "Description must be at least 10 characters"),
     readTime: z.number().optional(),
     tags: z.array(z.string()).optional(),
     keywords: z.array(z.string()).optional(),

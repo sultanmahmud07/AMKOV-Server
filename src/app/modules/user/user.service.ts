@@ -90,7 +90,7 @@ const updateUserByAdmin = async (userId:string, payload: Partial<IUser>, decoded
 
 const getAllUsers = async (query: Record<string, string>) => {
 
-  const queryBuilder = new QueryBuilder(User.find({ isDeleted: false }), query)
+  const queryBuilder = new QueryBuilder(User.find({ isDeleted: false, role: "USER" }), query)
 
   const users = await queryBuilder
     .search(userSearchableFields)

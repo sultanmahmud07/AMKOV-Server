@@ -20,10 +20,11 @@ const createUser = catchAsync(async (req: Request, res: Response) => {
 
 const updateUser = catchAsync(async (req: Request, res: Response) => {
     const verifiedToken = req.user;
-    const payload: IUser = {
-        ...req.body,
-        picture: req.file?.path
-    }
+       const file = req.file as Express.MulterS3.File;
+                const payload: IUser = {
+                    ...req.body,
+                    picture: file?.location
+                }
     const user = await UserServices.updateUser(payload, verifiedToken as JwtPayload)
 
     sendResponse(res, {

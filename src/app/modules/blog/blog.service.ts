@@ -10,7 +10,6 @@ const createBlog = async (payload: IBlog) => {
     if (existingBlog) {
         throw new Error("A Blog with this slug already exists.");
     }
-
     const blog = await Blog.create(payload)
 
     return blog;
