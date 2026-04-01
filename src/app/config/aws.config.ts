@@ -37,6 +37,7 @@ export const uploadBufferToS3 = async (
         };
 
     } catch (error: any) {
+        // eslint-disable-next-line no-console
         console.log(error);
         throw new AppError(401, `Error uploading file: ${error.message}`);
     }
