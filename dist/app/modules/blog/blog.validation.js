@@ -9,7 +9,7 @@ exports.createBlogZodSchema = zod_1.z.object({
     category: zod_1.z.string().optional(),
     metaTitle: zod_1.z.string().optional(),
     metaDescription: zod_1.z.string().optional(),
-    description: zod_1.z.string().min(10),
+    description: zod_1.z.string().min(10, "Description must be at least 10 characters"),
     readTime: zod_1.z.number().optional(),
     tags: zod_1.z.array(zod_1.z.string()).optional(),
     keywords: zod_1.z.array(zod_1.z.string()).optional(),

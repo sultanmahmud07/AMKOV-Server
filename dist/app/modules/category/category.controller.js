@@ -9,67 +9,68 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.BlogController = void 0;
+exports.CategoryController = void 0;
 const catchAsync_1 = require("../../utils/catchAsync");
 const sendResponse_1 = require("../../utils/sendResponse");
-const blog_service_1 = require("./blog.service");
-const createBlog = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const category_service_1 = require("./category.service");
+const createCategory = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const file = req.file;
     const payload = Object.assign(Object.assign({}, req.body), { thumbnail: file === null || file === void 0 ? void 0 : file.location });
-    const result = yield blog_service_1.BlogService.createBlog(payload);
+    //  console.log("Body data: ", payload)
+    const result = yield category_service_1.CategoryService.createCategory(payload);
     (0, sendResponse_1.sendResponse)(res, {
         statusCode: 201,
         success: true,
-        message: 'Blog created successfully',
+        message: "Category created",
         data: result,
     });
 }));
-const getAllBlog = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getAllCategories = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const query = req.query;
-    const result = yield blog_service_1.BlogService.getAllBlog(query);
+    const result = yield category_service_1.CategoryService.getAllCategory(query);
     (0, sendResponse_1.sendResponse)(res, {
         statusCode: 200,
         success: true,
-        message: 'Blogs retrieved successfully',
+        message: "Category retrieved",
         data: result.data,
         meta: result.meta,
     });
 }));
-const getSingleBlog = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getSingleCategory = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const slug = req.params.slug;
-    const result = yield blog_service_1.BlogService.getSingleBlog(slug);
+    const result = yield category_service_1.CategoryService.getSingleCategory(slug);
     (0, sendResponse_1.sendResponse)(res, {
         statusCode: 200,
         success: true,
-        message: 'Blog retrieved successfully',
-        data: result,
+        message: "Category retrieved",
+        data: result.data,
     });
 }));
-const updateBlog = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
-    const payload = Object.assign(Object.assign({}, req.body), { thumbnail: (_a = req.file) === null || _a === void 0 ? void 0 : _a.path });
-    const result = yield blog_service_1.BlogService.updateBlog(req.params.id, payload);
+const updateCategory = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const id = req.params.id;
+    const file = req.file;
+    const payload = Object.assign(Object.assign({}, req.body), { thumbnail: file === null || file === void 0 ? void 0 : file.location });
+    const result = yield category_service_1.CategoryService.updateCategory(id, payload);
     (0, sendResponse_1.sendResponse)(res, {
         statusCode: 200,
         success: true,
-        message: 'Blog updated successfully',
+        message: "Category updated",
         data: result,
     });
 }));
-const deleteBlog = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { id } = req.params;
-    const result = yield blog_service_1.BlogService.deleteBlog(id);
+const deleteCategory = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield category_service_1.CategoryService.deleteCategory(req.params.id);
     (0, sendResponse_1.sendResponse)(res, {
         statusCode: 200,
         success: true,
-        message: 'Blog deleted successfully',
+        message: "Category deleted",
         data: result,
     });
 }));
-exports.BlogController = {
-    createBlog,
-    getAllBlog,
-    getSingleBlog,
-    updateBlog,
-    deleteBlog,
+exports.CategoryController = {
+    createCategory,
+    getAllCategories,
+    getSingleCategory,
+    updateCategory,
+    deleteCategory,
 };

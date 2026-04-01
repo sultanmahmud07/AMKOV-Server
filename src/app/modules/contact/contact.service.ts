@@ -31,6 +31,17 @@ const getContact = async (query: Record<string, string>) => {
     meta
   }
 };
+const getSingleContact = async (id: string) => {
+    const contact = await Contact.findById({_id: id})
+    // .populate("products");
+    .populate({
+        path: "products",
+        select: "name slug images basePrice" // Only fetch these specific fields
+    });
+    return {
+        data: contact,
+    }
+};
 
 const deleteContact = async (contactId: string,) => {
   const contact = await Contact.findById(contactId);
@@ -46,5 +57,6 @@ const deleteContact = async (contactId: string,) => {
 export const ContactService = {
   createContact,
   getContact,
+  getSingleContact,
   deleteContact
 };

@@ -7,7 +7,7 @@ const blogSchema = new mongoose_1.Schema({
     title: { type: String, required: true, trim: true },
     slug: { type: String, required: true, unique: true, lowercase: true },
     reference: { type: String, required: true, lowercase: true },
-    category: { type: mongoose_1.Schema.Types.ObjectId, ref: "BlogCategory" },
+    category: String,
     metaTitle: String,
     metaDescription: String,
     description: { type: String, required: true },

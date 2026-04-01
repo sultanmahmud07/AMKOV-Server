@@ -6,6 +6,7 @@ var Role;
     Role["SUPER_ADMIN"] = "SUPER_ADMIN";
     Role["ADMIN"] = "ADMIN";
     Role["GUIDE"] = "GUIDE";
+    Role["USER"] = "USER";
     Role["TOURIST"] = "TOURIST";
 })(Role || (exports.Role = Role = {}));
 var IsActive;

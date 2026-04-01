@@ -92,7 +92,7 @@ const updateUserByAdmin = (userId, payload, decodedToken) => __awaiter(void 0, v
     return updatedUser;
 });
 const getAllUsers = (query) => __awaiter(void 0, void 0, void 0, function* () {
-    const queryBuilder = new QueryBuilder_1.QueryBuilder(user_model_1.User.find({ isDeleted: false }), query);
+    const queryBuilder = new QueryBuilder_1.QueryBuilder(user_model_1.User.find({ isDeleted: false, role: "USER" }), query);
     const users = yield queryBuilder
         .search(user_constant_1.userSearchableFields)
         .filter()

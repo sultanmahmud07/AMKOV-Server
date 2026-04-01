@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextFunction, Request, Response } from 'express';
 import httpStatus from "http-status-codes";
 import { catchAsync } from '../../utils/catchAsync';
@@ -6,7 +7,6 @@ import { ContactService } from './contact.service';
 // import { JwtPayload } from 'jsonwebtoken';
 // import { Types } from 'mongoose';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const createContact = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const contactData = req.body;
   const contact = await ContactService.createContact(contactData);
@@ -14,7 +14,7 @@ export const createContact = catchAsync(async (req: Request, res: Response, next
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     success: true,
-    message: 'Contact created successfully',
+    message: 'Inquiry submitted successfully',
     data: contact,
   });
 })
@@ -31,6 +31,16 @@ const getContactByAdmin = catchAsync(async (req: Request, res: Response) => {
     meta: result.meta
   })
 })
+const getSingleContact = catchAsync(async (req: Request, res: Response) => {
+    const id = req.params.id
+    const result = await ContactService.getSingleContact(id);
+    sendResponse(res, {
+        statusCode: 200,
+        success: true,
+        message: "Contact retrieved",
+        data: result.data,
+    });
+});
 const deleteContact = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const contactId = req.params.id;
   const result = await ContactService.deleteContact(contactId);
@@ -46,5 +56,6 @@ const deleteContact = catchAsync(async (req: Request, res: Response, next: NextF
 export const ContactController = {
   createContact,
   getContactByAdmin,
+  getSingleContact,
   deleteContact
 }

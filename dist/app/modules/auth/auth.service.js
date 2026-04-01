@@ -66,7 +66,7 @@ const forgotPassword = (email) => __awaiter(void 0, void 0, void 0, function* ()
     });
     const resetUILink = `${env_1.envVars.FRONTEND_URL}/reset-password?id=${isUserExist._id}&token=${resetToken}`;
     (0, sendEmail_1.sendEmail)({
-        to: isUserExist.email,
+        to: email,
         subject: "Password Reset",
         templateName: "forgetPassword",
         templateData: {

@@ -30,7 +30,7 @@ const sendOTP = (email, name) => __awaiter(void 0, void 0, void 0, function* () 
     if (!user) {
         throw new AppError_1.default(404, "User not found");
     }
-    if (!user.isVerified) {
+    if (user.isVerified) {
         throw new AppError_1.default(401, "You are already verified");
     }
     const otp = generateOtp();

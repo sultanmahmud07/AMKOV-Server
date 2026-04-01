@@ -1,11 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import mongoose from "mongoose";
 import { Booking } from "../booking/booking.model";
-import { User } from "../user/user.model";
 import { Review } from "../review/review.model";
 import { Tour } from "../tour/tour.model";
 import { Payment } from "../payment/payment.model";
-import { PAYMENT_STATUS } from "../payment/payment.interface";
+import { Product } from "../product/product.model";
+import { Contact } from "../contact/contact.model";
+import { Category } from "../category/category.model";
+import { User } from "../user/user.model"; // ✅ Uncommented
 
 export const getTouristStats = async (touristId: string) => {
   // Basic counts
@@ -162,66 +164,64 @@ export const getGuideStats = async (guideId: string) => {
   };
 };
 
+
 export const getAdminStats = async () => {
   const now = new Date();
+  
   const sevenDaysAgo = new Date(now);
   sevenDaysAgo.setDate(now.getDate() - 7);
 
   const thirtyDaysAgo = new Date(now);
   thirtyDaysAgo.setDate(now.getDate() - 30);
 
-  const yearAgo = new Date(now);
-  yearAgo.setFullYear(now.getFullYear() - 1);
+  // 1. Basic Counts
+  const totalProductsP = Product.countDocuments();
+  const totalCategoriesP = Category.countDocuments();
+  const totalInquiriesP = Contact.countDocuments();
+  const totalUsersP = User.countDocuments(); // ✅ Added
 
-  // Basic counts (run in parallel)
-  const totalUsersP = User.countDocuments();
-  const totalToursP = Tour.countDocuments();
-  const totalBookingsP = Booking.countDocuments();
-  const totalPaymentsP = Payment.countDocuments();
-  const totalReviewsP = Review.countDocuments();
+  // 2. Inquiry Breakdown
+  const productInquiriesP = Contact.countDocuments({ inquiryType: "PRODUCT" });
+  const generalInquiriesP = Contact.countDocuments({ inquiryType: "GENERAL" });
 
-  const bookingsConfirmedP = Booking.countDocuments({ status: "CONFIRMED" });
-  const bookingsPendingP = Booking.countDocuments({ status: "PENDING" });
-  const bookingsCompletedP = Booking.countDocuments({ status: "COMPLETED" });
-  const bookingsCancelledP = Booking.countDocuments({ status: "CANCELLED" });
-
+  // 3. New Additions (Growth metrics)
+  const newProductsLast30P = Product.countDocuments({ createdAt: { $gte: thirtyDaysAgo } });
+  const newInquiriesLast7P = Contact.countDocuments({ createdAt: { $gte: sevenDaysAgo } });
+  const newInquiriesLast30P = Contact.countDocuments({ createdAt: { $gte: thirtyDaysAgo } });
+  
+  // ✅ User Growth Metrics
   const newUsersLast7P = User.countDocuments({ createdAt: { $gte: sevenDaysAgo } });
   const newUsersLast30P = User.countDocuments({ createdAt: { $gte: thirtyDaysAgo } });
-  const newToursLast30P = Tour.countDocuments({ createdAt: { $gte: thirtyDaysAgo } });
 
-  // Recent items (last 5)
-  const recentBookingsP = Booking.find()
-    .sort({ createdAt: -1 })
+  // 4. Low Stock Alert
+  const lowStockProductsP = Product.find({ "variations.stock": { $lt: 10 } })
+    .select("name slug variations images")
     .limit(5)
-    .populate("tour", "title fee")
-    .populate("user", "name email")
-    .populate("guide", "name email")
-    .populate("payment", "status amount transactionId")
     .lean();
 
-  const recentPaymentsP = Payment.find()
+  // 5. Recent Activity (Last 5)
+  const recentInquiriesP = Contact.find()
     .sort({ createdAt: -1 })
     .limit(5)
-    .populate({
-      path: "booking",
-      select: "tour user guide date time totalPrice status",
-      populate: [
-        { path: "tour", select: "title fee" },
-        { path: "user", select: "name email" },
-        { path: "guide", select: "name email" },
-      ],
-    })
+    .populate("products", "name basePrice") 
     .lean();
 
-  // Total revenue (sum of PAID payments)
-  const revenueAggP = Payment.aggregate([
-    { $match: { status: PAYMENT_STATUS.PAID } },
-    { $group: { _id: null, totalRevenue: { $sum: "$amount" } } },
-  ]);
+  const recentProductsP = Product.find()
+    .sort({ createdAt: -1 })
+    .limit(5)
+    .populate("category", "name")
+    .lean();
 
-  // Revenue time-series for last 30 days (daily)
-  const revenueTimeSeriesP = Payment.aggregate([
-    { $match: { status: PAYMENT_STATUS.PAID, createdAt: { $gte: thirtyDaysAgo } } },
+  // ✅ Recent Users
+  const recentUsersP = User.find()
+    .sort({ createdAt: -1 })
+    .limit(5)
+    .select("name email role createdAt") // Select safe fields only
+    .lean();
+
+  // 6. Inquiry Time-Series
+  const inquiryTimeSeriesP = Contact.aggregate([
+    { $match: { createdAt: { $gte: thirtyDaysAgo } } },
     {
       $group: {
         _id: {
@@ -229,7 +229,7 @@ export const getAdminStats = async () => {
           month: { $month: "$createdAt" },
           day: { $dayOfMonth: "$createdAt" },
         },
-        total: { $sum: "$amount" },
+        total: { $sum: 1 },
       },
     },
     {
@@ -248,137 +248,81 @@ export const getAdminStats = async () => {
     { $sort: { date: 1 } },
   ]);
 
-  // Bookings per status (group)
-  const bookingsByStatusP = Booking.aggregate([
+  // 7. Top Products by Inquiry Count
+  const topProductsByInquiriesP = Contact.aggregate([
+    { $match: { inquiryType: "PRODUCT" } },
+    { $unwind: "$products" }, 
     {
       $group: {
-        _id: "$status",
-        count: { $sum: 1 },
+        _id: "$products",
+        inquiryCount: { $sum: 1 }, 
       },
     },
-  ]);
-
-  // Top guides by earnings (sum of PAID payments for bookings where booking.guide == guide)
-  const topGuidesByEarningsP = Booking.aggregate([
-    // join payments
-    {
-      $lookup: {
-        from: "payments",
-        localField: "payment",
-        foreignField: "_id",
-        as: "paymentData",
-      },
-    },
-    { $unwind: { path: "$paymentData", preserveNullAndEmptyArrays: true } },
-    { $match: { "paymentData.status": PAYMENT_STATUS.PAID } },
-    {
-      $group: {
-        _id: "$guide",
-        earnings: { $sum: "$paymentData.amount" },
-        bookingsCount: { $sum: 1 },
-      },
-    },
-    { $sort: { earnings: -1 } },
-    { $limit: 5 },
-    {
-      $lookup: {
-        from: "users",
-        localField: "_id",
-        foreignField: "_id",
-        as: "guide",
-      },
-    },
-    { $unwind: { path: "$guide", preserveNullAndEmptyArrays: true } },
-    {
-      $project: {
-        guideId: "$_id",
-        earnings: 1,
-        bookingsCount: 1,
-        guide: { name: "$guide.name", email: "$guide.email", _id: "$guide._id", picture: "$guide.picture" },
-      },
-    },
-  ]);
-
-  // Top tours by bookings count
-  const topToursByBookingsP = Booking.aggregate([
-    {
-      $group: {
-        _id: "$tour",
-        bookingsCount: { $sum: 1 },
-      },
-    },
-    { $sort: { bookingsCount: -1 } },
+    { $sort: { inquiryCount: -1 } },
     { $limit: 6 },
     {
       $lookup: {
-        from: "tours",
+        from: "products", 
         localField: "_id",
         foreignField: "_id",
-        as: "tour",
+        as: "product",
       },
     },
-    { $unwind: { path: "$tour", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$product", preserveNullAndEmptyArrays: true } },
     {
       $project: {
-        tourId: "$_id",
-        bookingsCount: 1,
-        tour: { title: "$tour.title", fee: "$tour.fee", destinationCity: "$tour.destinationCity", _id: "$tour._id", thumbnail: "$tour.thumbnail" },
+        productId: "$_id",
+        inquiryCount: 1,
+        product: { 
+            name: "$product.name", 
+            basePrice: "$product.basePrice", 
+            slug: "$product.slug", 
+            image: { $arrayElemAt: ["$product.images", 0] } 
+        },
       },
     },
   ]);
 
   // Run all promises in parallel
   const [
-    totalUsers,
-    totalTours,
-    totalBookings,
-    totalPayments,
-    totalReviews,
-    bookingsConfirmed,
-    bookingsPending,
-    bookingsCompleted,
-    bookingsCancelled,
-    newUsersLast7,
-    newUsersLast30,
-    newToursLast30,
-    recentBookings,
-    recentPayments,
-    revenueAgg,
-    revenueTimeSeries,
-    bookingsByStatus,
-    topGuidesByEarnings,
-    topToursByBookings,
+    totalProducts,
+    totalCategories,
+    totalInquiries,
+    totalUsers, // ✅
+    productInquiries,
+    generalInquiries,
+    newProductsLast30,
+    newInquiriesLast7,
+    newInquiriesLast30,
+    newUsersLast7, // ✅
+    newUsersLast30, // ✅
+    lowStockProducts,
+    recentInquiries,
+    recentProducts,
+    recentUsers, // ✅
+    inquiryTimeSeries,
+    topProductsByInquiries,
   ] = await Promise.all([
-    totalUsersP,
-    totalToursP,
-    totalBookingsP,
-    totalPaymentsP,
-    totalReviewsP,
-    bookingsConfirmedP,
-    bookingsPendingP,
-    bookingsCompletedP,
-    bookingsCancelledP,
-    newUsersLast7P,
-    newUsersLast30P,
-    newToursLast30P,
-    recentBookingsP,
-    recentPaymentsP,
-    revenueAggP,
-    revenueTimeSeriesP,
-    bookingsByStatusP,
-    topGuidesByEarningsP,
-    topToursByBookingsP,
+    totalProductsP,
+    totalCategoriesP,
+    totalInquiriesP,
+    totalUsersP, // ✅
+    productInquiriesP,
+    generalInquiriesP,
+    newProductsLast30P,
+    newInquiriesLast7P,
+    newInquiriesLast30P,
+    newUsersLast7P, // ✅
+    newUsersLast30P, // ✅
+    lowStockProductsP,
+    recentInquiriesP,
+    recentProductsP,
+    recentUsersP, // ✅
+    inquiryTimeSeriesP,
+    topProductsByInquiriesP,
   ]);
 
-  const totalRevenue = (revenueAgg && revenueAgg[0] && revenueAgg[0].totalRevenue) || 0;
-
-  // Normalize bookingsByStatus to key:value map
-  const bookingsByStatusMap: Record<string, number> = {};
-  bookingsByStatus.forEach((b: any) => {
-    bookingsByStatusMap[String(b._id || "UNKNOWN")] = b.count || 0;
-  });
-
-  // Prepare revenue time-series for charting (fill missing days)
+  // Prepare Inquiry time-series for charting
   const days: { date: string; total: number }[] = [];
   const start = new Date(thirtyDaysAgo);
   for (let d = new Date(start); d <= now; d.setDate(d.getDate() + 1)) {
@@ -387,43 +331,48 @@ export const getAdminStats = async () => {
       total: 0,
     });
   }
-  // map results
-  const revenueMap = new Map<string, number>();
-  (revenueTimeSeries || []).forEach((r: any) => {
+
+  // Map results
+  const inquiryMap = new Map<string, number>();
+  (inquiryTimeSeries || []).forEach((r: any) => {
     const key = new Date(r.date).toISOString().slice(0, 10);
-    revenueMap.set(key, r.total || 0);
+    inquiryMap.set(key, r.total || 0);
   });
-  const revenueSeries = days.map((day) => ({ date: day.date, total: revenueMap.get(day.date) || 0 }));
+  
+  const inquirySeries = days.map((day) => ({ 
+    date: day.date, 
+    total: inquiryMap.get(day.date) || 0 
+  }));
 
   return {
     data: {
       summary: {
-        totalUsers,
-        totalTours,
-        totalBookings,
-        totalPayments,
-        totalReviews,
-        totalRevenue,
+        totalProducts,
+        totalCategories,
+        totalInquiries,
+        totalUsers, // ✅ Added to summary
       },
       counts: {
-        bookings: {
-          confirmed: bookingsConfirmed,
-          pending: bookingsPending,
-          completed: bookingsCompleted,
-          cancelled: bookingsCancelled,
+        inquiries: {
+          product: productInquiries,
+          general: generalInquiries,
         },
-        newUsersLast7,
-        newUsersLast30,
-        newToursLast30,
+        newProductsLast30,
+        newInquiriesLast7,
+        newInquiriesLast30,
+        newUsersLast7, // ✅ Added to counts
+        newUsersLast30, // ✅ Added to counts
+      },
+      alerts: {
+        lowStockProducts, 
       },
       recent: {
-        bookings: recentBookings,
-        payments: recentPayments,
+        inquiries: recentInquiries,
+        products: recentProducts,
+        users: recentUsers, // ✅ Added to recent activity
       },
-      bookingsByStatus: bookingsByStatusMap,
-      revenueSeries, // [{date: '2025-12-01', total: 123}, ...] (last 30 days)
-      topGuidesByEarnings,
-      topToursByBookings,
+      inquirySeries, 
+      topProductsByInquiries, 
     },
   };
 };

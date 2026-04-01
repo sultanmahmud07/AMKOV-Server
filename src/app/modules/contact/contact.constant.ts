@@ -1,2 +1,2 @@
-export const contactSearchableFields = ["name", "email"];
+export const contactSearchableFields = ["name", "email", "phone", "message", "inquiryType"];
 

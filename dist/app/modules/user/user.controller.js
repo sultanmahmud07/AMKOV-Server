@@ -27,9 +27,9 @@ const createUser = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, 
     });
 }));
 const updateUser = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
     const verifiedToken = req.user;
-    const payload = Object.assign(Object.assign({}, req.body), { picture: (_a = req.file) === null || _a === void 0 ? void 0 : _a.path });
+    const file = req.file;
+    const payload = Object.assign(Object.assign({}, req.body), { picture: file === null || file === void 0 ? void 0 : file.location });
     const user = yield user_service_1.UserServices.updateUser(payload, verifiedToken);
     (0, sendResponse_1.sendResponse)(res, {
         success: true,

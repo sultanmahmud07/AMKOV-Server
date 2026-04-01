@@ -6,12 +6,14 @@ const auth_route_1 = require("../modules/auth/auth.route");
 const user_route_1 = require("../modules/user/user.route");
 const stats_route_1 = require("../modules/stats/stats.route");
 const contact_route_1 = require("../modules/contact/contact.route");
-const tour_route_1 = require("../modules/tour/tour.route");
 const booking_route_1 = require("../modules/booking/booking.route");
 const payment_route_1 = require("../modules/payment/payment.route");
 const otp_route_1 = require("../modules/otp/otp.route");
 const review_route_1 = require("../modules/review/review.route");
 const message_route_1 = require("../modules/message/message.route");
+const blog_route_1 = require("../modules/blog/blog.route");
+const product_route_1 = require("../modules/product/product.route");
+const category_route_1 = require("../modules/category/category.route");
 exports.router = (0, express_1.Router)();
 const moduleRoutes = [
     {
@@ -23,8 +25,12 @@ const moduleRoutes = [
         route: auth_route_1.AuthRoutes
     },
     {
-        path: "/listing",
-        route: tour_route_1.TourRoutes
+        path: "/category",
+        route: category_route_1.CategoryRoutes
+    },
+    {
+        path: "/product",
+        route: product_route_1.ProductRoutes
     },
     {
         path: "/booking",
@@ -49,6 +55,10 @@ const moduleRoutes = [
     {
         path: "/contact",
         route: contact_route_1.ContactRoutes
+    },
+    {
+        path: "/blog",
+        route: blog_route_1.BlogRoutes
     },
     {
         path: "/message",

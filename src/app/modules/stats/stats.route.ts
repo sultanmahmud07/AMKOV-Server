@@ -16,7 +16,7 @@ router.get(
     StatsController.getGuideStats
 );
 router.get(
-    "/admin",
+    "/analytics",
     checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
     StatsController.getAdminStats
 );
