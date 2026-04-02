@@ -110,7 +110,7 @@ const getAllUsers = async (query: Record<string, string>) => {
 };
 const getAllAdmin = async (query: Record<string, string>) => {
 
-  const queryBuilder = new QueryBuilder(User.find({ role: "ADMIN" }), query)
+  const queryBuilder = new QueryBuilder(User.find({ role: { $in: ["ADMIN", "SUPER_ADMIN"] } }), query)
 
   const users = await queryBuilder
     .search(userSearchableFields)
