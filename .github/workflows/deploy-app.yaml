@@ -1,0 +1,55 @@
+name: Ready the code and deploy
+
+on:
+   pull_request:
+      types: opened
+   push:
+      branches:
+         - 'main'
+         - 'release/**'
+
+jobs:
+   test-code:
+      runs-on: ubuntu-latest
+      steps:
+         - name: copying the codes
+           uses: actions/checkout@v4
+
+         - name: install node-js
+           uses: actions/setup-node@v4
+           with:
+              node-version: 24.3.0
+
+         - name: check node version
+           run: node -v
+
+         - name: install dependencies
+           run: npm install --frozen-lockfile
+
+         - name: Run the tests
+           run: npm test
+
+   build-code:
+      runs-on: ubuntu-latest
+      needs: test-code
+      steps:
+         - name: install node-js
+           uses: actions/setup-node@v4
+           with:
+              node-version: 24.3.0
+
+         - name: copying the codes
+           uses: actions/checkout@v4
+
+         - name: install dependencies
+           run: npm install --frozen-lockfile
+
+         - name: Build the codes
+           run: npm build
+
+   deploy-code:
+      runs-on: ubuntu-latest
+      needs: build-code
+      steps:
+         - name: Deploy the codes
+           run: echo "deploying...."
