@@ -1,55 +1,78 @@
-name: Ready the code and deploy
+name: Deploy on EC2
 
 on:
-   pull_request:
-      types: opened
    push:
-      branches:
-         - 'main'
-         - 'release/**'
+      branches: ['main', 'deploy']
+   pull_request:
+      branches: ['main', 'deploy']
 
 jobs:
-   test-code:
+   build:
       runs-on: ubuntu-latest
+
       steps:
-         - name: copying the codes
-           uses: actions/checkout@v4
+         - uses: actions/checkout@v3
 
-         - name: install node-js
-           uses: actions/setup-node@v4
+         - name: Use Node.js
+           uses: actions/setup-node@v3
            with:
-              node-version: 24.3.0
+              node-version: '20.15'
 
-         - name: check node version
-           run: node -v
-
-         - name: install dependencies
+         - name: Install Dependencies
            run: npm install --frozen-lockfile
 
-         - name: Run the tests
-           run: npm test
-
-   build-code:
+         - name: Build Project
+           run: npm build
+   deploy:
       runs-on: ubuntu-latest
-      needs: test-code
+      needs: build
+
       steps:
-         - name: install node-js
-           uses: actions/setup-node@v4
+         - uses: actions/checkout@v3
+
+         - name: Use Node.js
+           uses: actions/setup-node@v3
            with:
-              node-version: 24.3.0
+              node-version: '20.15'
 
-         - name: copying the codes
-           uses: actions/checkout@v4
-
-         - name: install dependencies
+         - name: Install Dependencies
            run: npm install --frozen-lockfile
 
-         - name: Build the codes
+         - name: Build Project
            run: npm build
 
-   deploy-code:
-      runs-on: ubuntu-latest
-      needs: build-code
-      steps:
-         - name: Deploy the codes
-           run: echo "deploying...."
+           # Configure SSH
+         - name: Configure SSH
+           env:
+              SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+           run: |
+              mkdir -p ~/.ssh
+              echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+              chmod 600 ~/.ssh/id_rsa
+              ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+         # Deploy to EC2
+         - name: Deploy to EC2
+           env:
+              EC2_HOST: ${{ secrets.EC2_HOST }}
+              EC2_USER: ${{ secrets.EC2_USER }}
+           run: |
+              # Create deployment directory
+              ssh $EC2_USER@$EC2_HOST "mkdir -p ~/app"
+
+              # Copy files to EC2 instance
+              rsync -avz \
+                --exclude='.git' \
+                --exclude='node_modules' \
+                --exclude='.github' \
+                . $EC2_USER@$EC2_HOST:~/app/
+
+
+              # Install production dependencies on EC2
+              ssh $EC2_USER@$EC2_HOST "cd ~/app && export PATH=$PATH:/run/user/1000/fnm_multishells/112424_1734077954807/bin && npm install --frozen-lockfile"
+
+              # Stop existing PM2 process if it exists
+              ssh $EC2_USER@$EC2_HOST "export PATH=$PATH:/run/user/1000/fnm_multishells/112424_1734077954807/bin && pm2 delete amkov-server || true"
+
+              # Start the application with PM2
+              ssh $EC2_USER@$EC2_HOST "export PATH=$PATH:/run/user/1000/fnm_multishells/112424_1734077954807/bin && cd ~/app && pm2 start dist/server.js --name amkov-server"
