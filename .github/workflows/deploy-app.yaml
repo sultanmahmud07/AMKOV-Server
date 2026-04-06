@@ -2,21 +2,21 @@ name: Deploy on EC2
 
 on:
   push:
-    branches: ['main']
+    branches: ["main"]
   pull_request:
-    branches: ['main']
+    branches: ["main"]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4 # Updated to v4
+      - uses: actions/checkout@v4
 
       - name: Use Node.js
-        uses: actions/setup-node@v4 # Updated to v4
+        uses: actions/setup-node@v4
         with:
-          node-version: '24' # Matched to your local Mac
+          node-version: "24"
 
       - name: Install Dependencies
         run: npm install --frozen-lockfile
@@ -34,7 +34,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: "24"
 
       - name: Install Dependencies
         run: npm install --frozen-lockfile
@@ -48,7 +48,6 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
         run: |
           mkdir -p ~/.ssh
-          # Use cat to preserve newlines and prevent libcrypto errors
           cat << 'EOF' > ~/.ssh/id_rsa
           ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           EOF
@@ -61,18 +60,22 @@ jobs:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_USER: ${{ secrets.EC2_USER }}
         run: |
-          # 1. Create deployment directory (explicitly using the key)
-          # ssh -i ~/.ssh/id_rsa $EC2_USER@$EC2_HOST "mkdir -p ~/app"
-          ssh -v -i ~/.ssh/id_rsa $EC2_USER@$EC2_HOST "mkdir -p ~/app"
+          # 1. Create deployment directory
+          ssh -i ~/.ssh/id_rsa $EC2_USER@$EC2_HOST "mkdir -p ~/app"
 
-          # 2. Copy files to EC2 instance (explicitly using the key)
+          # 2. Create the .env file locally from GitHub Secrets
+          cat << 'EOF' > .env
+          ${{ secrets.APP_ENVS }}
+          EOF
+
+          # 3. Copy files to EC2 instance (rsync will automatically copy the .env file we just made)
           rsync -avz -e "ssh -i ~/.ssh/id_rsa" \
             --exclude='.git' \
             --exclude='node_modules' \
             --exclude='.github' \
             . $EC2_USER@$EC2_HOST:~/app/
 
-          # 3. Execute deployment commands safely without hardcoded temporary paths
+          # 4. Execute deployment commands safely
           ssh -i ~/.ssh/id_rsa $EC2_USER@$EC2_HOST << 'EOF'
             # Safely load the fnm environment
             export PATH=$HOME/.local/share/fnm:$PATH
