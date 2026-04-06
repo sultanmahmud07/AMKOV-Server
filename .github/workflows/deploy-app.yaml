@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4 # Updated to v4 and testing comment
+      - uses: actions/checkout@v4 # Updated to v4
 
       - name: Use Node.js
         uses: actions/setup-node@v4 # Updated to v4
@@ -62,7 +62,8 @@ jobs:
           EC2_USER: ${{ secrets.EC2_USER }}
         run: |
           # 1. Create deployment directory (explicitly using the key)
-          ssh -i ~/.ssh/id_rsa $EC2_USER@$EC2_HOST "mkdir -p ~/app"
+          # ssh -i ~/.ssh/id_rsa $EC2_USER@$EC2_HOST "mkdir -p ~/app"
+          ssh -v -i ~/.ssh/id_rsa $EC2_USER@$EC2_HOST "mkdir -p ~/app"
 
           # 2. Copy files to EC2 instance (explicitly using the key)
           rsync -avz -e "ssh -i ~/.ssh/id_rsa" \
