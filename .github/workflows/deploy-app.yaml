@@ -78,6 +78,8 @@ jobs:
             export PATH=$HOME/.local/share/fnm:$PATH
             eval "`fnm env`"
             
+            npm install -g pm2
+            
             cd ~/app
             
             # Install production dependencies
