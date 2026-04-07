@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Response } from "express";
 
 export interface AuthTokens {
@@ -7,21 +6,20 @@ export interface AuthTokens {
 }
 
 export const setAuthCookie = (res: Response, tokenInfo: AuthTokens) => {
-    // My Old code, which works but not secure in production because of sameSite: "lax" and secure: false
-    // if (tokenInfo.accessToken) {
-    //     res.cookie("accessToken", tokenInfo.accessToken, {
-    //         httpOnly: true,
-    //         secure: true,
-    //         sameSite: "none"
-    //     })
-    // }
-    // if (tokenInfo.refreshToken) {
-    //     res.cookie("refreshToken", tokenInfo.refreshToken, {
-    //         httpOnly: true,
-    //         secure: true,
-    //         sameSite: "none"
-    //     })
-    // }
+    if (tokenInfo.accessToken) {
+        res.cookie("accessToken", tokenInfo.accessToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none"
+        })
+    }
+    if (tokenInfo.refreshToken) {
+        res.cookie("refreshToken", tokenInfo.refreshToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none"
+        })
+    }
     // const isProduction = false;
 
     // if (tokenInfo.accessToken) {
