@@ -87,7 +87,7 @@ const updateUserByAdmin = async (userId:string, payload: Partial<IUser>, decoded
 
   return updatedUser;
 };
-// here is
+
 const getAllUsers = async (query: Record<string, string>) => {
 
   const queryBuilder = new QueryBuilder(User.find({ isDeleted: false, role: "USER" }), query)
