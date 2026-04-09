@@ -16,7 +16,9 @@ export interface IProduct {
   name: string;
   slug: string;
   bulletPoints?: string[];      // The short list next to the camera
-  description?: string;         // HTML from TextEditor
+  description?: string;    
+  metaTitle?: string;
+  metaDescription?: string;
   specifications?: ISpecification[]; // Table data
   images?: string[];            // Main gallery images
   featureImages?: string[];     // Images specifically for the Features tab
@@ -24,6 +26,10 @@ export interface IProduct {
   variations: IProductVariation[];
   category?: Types.ObjectId;
   deleteImages?: string[];
+  isFeatured?: boolean;
+  isMenu?: boolean;
+  isTrendy?: boolean;
+  orderBy?: number;
   createdAt: Date;
   updatedAt: Date;
 }

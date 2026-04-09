@@ -11,18 +11,11 @@ import {
 
 const router = express.Router();
 router.get("/", ProductController.getAllProducts);
+router.get("/short-info", ProductController.getProductShortInfo);
 
-// router.post(
-//     "/create",
-//     checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
-//     multerUpload.array("files"),
-//     validateRequest(createProductZodSchema),
-//     ProductController.createProduct
-// );
 router.post(
     "/create",
     checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
-    // Accept up to 10 gallery images, and 10 feature images
     multerUpload.fields([
         { name: "images", maxCount: 10 },
         { name: "featureImages", maxCount: 10 }

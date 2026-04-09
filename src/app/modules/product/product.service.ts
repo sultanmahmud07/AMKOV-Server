@@ -1,6 +1,7 @@
 
 import { deleteImageFromCLoudinary } from "../../config/cloudinary.config";
 import { QueryBuilder } from "../../utils/QueryBuilder";
+import { Category } from "../category/category.model";
 import { productSearchableFields } from "./product.constant";
 import { IProduct } from "./product.interface";
 import { Product } from "./product.model";
@@ -17,9 +18,26 @@ const createProduct = async (payload: IProduct) => {
 };
 
 const getAllProducts = async (query: Record<string, string>) => {
+const queryObj = { ...query };
+  if (queryObj.category_slug) {
+        const category = await Category.findOne({ slug: queryObj.category_slug }).select('_id');
 
+        if (!category) {
+            return {
+                data: [],
+                meta: {
+                    page: Number(queryObj.page) || 1,
+                    limit: Number(queryObj.limit) || 10,
+                    total: 0,
+                    totalPage: 0
+                }
+            };
+        }
 
-    const queryBuilder = new QueryBuilder(Product.find(), query)
+        queryObj.category = category._id.toString();
+        delete queryObj.category_slug;
+    }
+    const queryBuilder = new QueryBuilder(Product.find().populate('category'), queryObj)
 
     const products = await queryBuilder
         .search(productSearchableFields)
@@ -39,6 +57,30 @@ const getAllProducts = async (query: Record<string, string>) => {
         meta
     }
 };
+const getProductShortInfo = async (query: Record<string, string>) => {
+    const baseQuery = Product.find().select('_id name images slug description');
+
+    const queryBuilder = new QueryBuilder(baseQuery, query);
+
+    const products = await queryBuilder
+        .search(productSearchableFields)
+        .filter()
+        .sort()
+        .fields() 
+        .paginate();
+
+    const [data, meta] = await Promise.all([
+        products.build(), 
+        queryBuilder.getMeta()
+    ]);
+
+    return {
+        data,
+        meta
+    };
+};
+
+
 const getSingleProduct = async (slug: string) => {
     const tour = await Product.findOne({ slug });
     return {
@@ -97,6 +139,7 @@ export const ProductService = {
     createProduct,
     getSingleProduct,
     getAllProducts,
+    getProductShortInfo,
     updateProduct,
     deleteProduct,
 };

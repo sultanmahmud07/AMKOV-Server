@@ -46,6 +46,18 @@ const getAllProducts = catchAsync(async (req: Request, res: Response) => {
         meta: result.meta,
     });
 });
+const getProductShortInfo = catchAsync(async (req: Request, res: Response) => {
+
+    const query = req.query
+    const result = await ProductService.getProductShortInfo(query as Record<string, string>);
+    sendResponse(res, {
+        statusCode: 200,
+        success: true,
+        message: 'Products short info retrieved successfully',
+        data: result.data,
+        meta: result.meta,
+    });
+});
 
 const getSingleProduct = catchAsync(async (req: Request, res: Response) => {
     const slug = req.params.slug
@@ -83,6 +95,7 @@ const deleteProduct = catchAsync(async (req: Request, res: Response) => {
 export const ProductController = {
     createProduct,
     getAllProducts,
+    getProductShortInfo,
     getSingleProduct,
     updateProduct,
     deleteProduct,

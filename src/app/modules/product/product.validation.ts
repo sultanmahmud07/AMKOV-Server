@@ -14,8 +14,10 @@ const specificationSchema = z.object({
 
 export const createProductZodSchema = z.object({
     name: z.string(),
-    slug: z.string(), 
+    slug: z.string(),
     description: z.string().optional(),
+    metaTitle: z.string().optional(),
+    metaDescription: z.string().optional(),
     basePrice: z.number(), // Back to normal!
     category: z.string().optional(),
     bulletPoints: z.array(z.string()).optional(), // Back to normal!
@@ -24,5 +26,5 @@ export const createProductZodSchema = z.object({
 });
 
 export const updateProductZodSchema = z.object({
- 
+
 });
