@@ -26,8 +26,8 @@ const productSchema = new Schema<IProduct>(
     video: { type: String }, // Store the video URL directly
     deleteImages: { type: [String], default: [] },
     isFeatured: { type: Boolean, default: false },
-    isMenu: { type: Boolean, default: false },
-    isTrendy: { type: Boolean, default: false },
+    isMenu: { type: Boolean },
+    isTrendy: { type: Boolean },
     orderBy: { type: Number, default: 0 },
     featureImages: { type: [String], default: [] },
     basePrice: { type: Number, required: true },

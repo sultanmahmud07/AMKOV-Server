@@ -1,5 +1,5 @@
 
-import { deleteImageFromCLoudinary } from "../../config/cloudinary.config";
+import { deleteFileFromS3 } from "../../config/aws.config";
 import { QueryBuilder } from "../../utils/QueryBuilder";
 import { Category } from "../category/category.model";
 import { productSearchableFields } from "./product.constant";
@@ -96,7 +96,7 @@ const getRelativeProducts = async (query: Record<string, string>) => {
     if (category_id) {
         filterConditions.category = category_id;
         // Delete it from queryObj so QueryBuilder doesn't process it redundantly
-        delete queryObj.category_id; 
+        delete queryObj.category_id;
     }
 
     // Skip the current product
@@ -104,13 +104,13 @@ const getRelativeProducts = async (query: Record<string, string>) => {
         // Use MongoDB's $ne (not equal) operator
         filterConditions._id = { $ne: current_product_id };
         // Delete it from queryObj
-        delete queryObj.current_product_id; 
+        delete queryObj.current_product_id;
     }
 
     // 4. Create the base query with the applied filters and .select()
     const baseQuery = Product.find(filterConditions)
-                             .select('_id name images slug description')
-                             .populate('category');
+        .select('_id name images slug description')
+        .populate('category');
 
     // 5. Pass the pre-filtered query into the QueryBuilder
     const queryBuilder = new QueryBuilder(baseQuery, queryObj);
@@ -142,38 +142,52 @@ const getSingleProduct = async (slug: string) => {
     }
 };
 const updateProduct = async (id: string, payload: Partial<IProduct>) => {
+    const existingProduct = await Product.findById(id);
 
-    const existingTour = await Product.findById(id);
-
-    if (!existingTour) {
-        throw new Error("Tour not found.");
+    if (!existingProduct) {
+        throw new Error("Product not found.");
     }
 
-    if (payload.images && payload.images.length > 0 && existingTour.images && existingTour.images.length > 0) {
-        payload.images = [...payload.images, ...existingTour.images]
+    // Initialize arrays to prevent undefined errors
+    payload.deleteImages = payload.deleteImages || [];
+    const newGalleryUploads = payload.images || [];
+    const newFeatureUploads = payload.featureImages || [];
+
+    // --- 1. HANDLE VIDEO REPLACEMENT ---
+    // If a new video is uploaded, ensure the old one is deleted from the cloud
+    if (payload.video && existingProduct.video && payload.video !== existingProduct.video) {
+        payload.deleteImages.push(existingProduct.video);
     }
 
-    if (payload.deleteImages && payload.deleteImages.length > 0 && existingTour.images && existingTour.images.length > 0) {
+    // --- 2. HANDLE IMAGES (Gallery & Features) ---
+    const finalGalleryImages = [...(existingProduct.images || []), ...newGalleryUploads]
+        .filter(url => !payload.deleteImages?.includes(url));
 
-        const restDBImages = existingTour.images.filter(imageUrl => !payload.deleteImages?.includes(imageUrl))
+    const finalFeatureImages = [...(existingProduct.featureImages || []), ...newFeatureUploads]
+        .filter(url => !payload.deleteImages?.includes(url));
 
-        const updatedPayloadImages = (payload.images || [])
-            .filter(imageUrl => !payload.deleteImages?.includes(imageUrl))
-            .filter(imageUrl => !restDBImages.includes(imageUrl))
+    // Use a Set to guarantee there are absolutely no duplicate URLs in the database
+    payload.images = Array.from(new Set(finalGalleryImages));
+    payload.featureImages = Array.from(new Set(finalFeatureImages));
+    // --- 3. DATABASE UPDATE ---
+    // Added runValidators: true to ensure Zod/Mongoose rules are enforced on updates
+    const updatedProduct = await Product.findByIdAndUpdate(id, payload, {
+        new: true,
+        runValidators: true
+    });
 
-        payload.images = [...restDBImages, ...updatedPayloadImages]
-
-
+    // --- 4. CLOUD STORAGE CLEANUP ---
+    if (payload.deleteImages.length > 0) {
+        // We drop the 'await' here so the API responds instantly to the frontend.
+        // The server will delete the AWS S3 / Cloudinary files silently in the background.
+        Promise.all(payload.deleteImages.map(url => deleteFileFromS3(url)))
+            // eslint-disable-next-line no-console
+            .catch(err => console.error("Background cloud deletion failed:", err));
     }
 
-    const updatedTour = await Product.findByIdAndUpdate(id, payload, { new: true });
-
-    if (payload.deleteImages && payload.deleteImages.length > 0 && existingTour.images && existingTour.images.length > 0) {
-        await Promise.all(payload.deleteImages.map(url => deleteImageFromCLoudinary(url)))
-    }
-
-    return updatedTour;
+    return updatedProduct;
 };
+
 const deleteProduct = async (id: string) => {
     const existingProduct = await Product.findById(id);
     if (!existingProduct) {
@@ -182,7 +196,14 @@ const deleteProduct = async (id: string) => {
 
     if (existingProduct.images && Array.isArray(existingProduct.images) && existingProduct.images.length) {
         const imageUrls = existingProduct.images.map(file => file);
-        await Promise.all(imageUrls.map(url => deleteImageFromCLoudinary(url)))
+        await Promise.all(imageUrls.map(url => deleteFileFromS3(url)))
+    }
+    if (existingProduct.featureImages && Array.isArray(existingProduct.featureImages) && existingProduct.featureImages.length) {
+        const featureImageUrls = existingProduct.featureImages.map(file => file);
+        await Promise.all(featureImageUrls.map(url => deleteFileFromS3(url)))
+    }
+    if (existingProduct.video) {
+        await deleteFileFromS3(existingProduct.video)
     }
     await Product.findByIdAndDelete(id);
     return null;

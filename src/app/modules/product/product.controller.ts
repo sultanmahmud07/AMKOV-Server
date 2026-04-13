@@ -79,12 +79,41 @@ const getSingleProduct = catchAsync(async (req: Request, res: Response) => {
         data: result,
     });
 });
+
 const updateProduct = catchAsync(async (req: Request, res: Response) => {
-    const payload: IProduct = {
-        ...req.body,
-        images: (req.files as Express.Multer.File[]).map(file => file.path)
+    const files = req.files as { [fieldname: string]: Express.MulterS3.File[] };
+    const galleryFiles = files?.['images'] || [];
+    const featureFiles = files?.['featureImages'] || [];
+    const videoFiles = files?.['video'] || [];
+
+    // 1. Safely extract existing images from req.body (FormData can send string or array)
+    let existingImages: string[] = [];
+    if (req.body.images) {
+        existingImages = Array.isArray(req.body.images) ? req.body.images : [req.body.images];
     }
+
+    let existingFeatureImages: string[] = [];
+    if (req.body.featureImages) {
+        existingFeatureImages = Array.isArray(req.body.featureImages) ? req.body.featureImages : [req.body.featureImages];
+    }
+
+    // 2. Use Partial<IProduct> since an update might not include every required field
+    const payload: Partial<IProduct> = {
+        ...req.body,
+        // 3. MERGE the existing images with the newly uploaded ones
+        images: [...existingImages, ...galleryFiles.map(file => file.location)],
+        featureImages: [...existingFeatureImages, ...featureFiles.map(file => file.location)],
+    };
+
+    // 4. Handle Video safely
+    if (videoFiles.length > 0) {
+        payload.video = videoFiles[0].location; // New video uploaded
+    } else if (req.body.video) {
+        payload.video = req.body.video; // Keep existing video
+    }
+
     const result = await ProductService.updateProduct(req.params.id, payload);
+
     sendResponse(res, {
         statusCode: 200,
         success: true,

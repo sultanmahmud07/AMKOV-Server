@@ -20,7 +20,7 @@ router.post(
     multerUpload.fields([
         { name: "images", maxCount: 10 },
         { name: "featureImages", maxCount: 10 },
-        { name: "video", maxCount: 1 } 
+        { name: "video", maxCount: 1 }
     ]),
     validateRequest(createProductZodSchema),
     ProductController.createProduct
@@ -33,7 +33,11 @@ router.get(
 router.patch(
     "/:id",
     checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
-    multerUpload.array("files"),
+    multerUpload.fields([
+        { name: "images", maxCount: 10 },
+        { name: "featureImages", maxCount: 10 },
+        { name: "video", maxCount: 1 }
+    ]),
     validateRequest(updateProductZodSchema),
     ProductController.updateProduct
 );
