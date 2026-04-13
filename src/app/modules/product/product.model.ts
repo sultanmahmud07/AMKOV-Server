@@ -23,6 +23,7 @@ const productSchema = new Schema<IProduct>(
     metaDescription: { type: String },
     specifications: { type: [specificationSchema], default: [] },
     images: { type: [String], default: [] },
+    video: { type: String }, // Store the video URL directly
     deleteImages: { type: [String], default: [] },
     isFeatured: { type: Boolean, default: false },
     isMenu: { type: Boolean, default: false },

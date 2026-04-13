@@ -20,6 +20,7 @@ export const createProductZodSchema = z.object({
     metaDescription: z.string().optional(),
     basePrice: z.number(), // Back to normal!
     category: z.string().optional(),
+    video: z.string().optional(), // New field for video URL
     bulletPoints: z.array(z.string()).optional(), // Back to normal!
     specifications: z.array(specificationSchema).optional(), // Back to normal!
     variations: z.array(productVariationSchema).min(1, "At least one variation is required"),

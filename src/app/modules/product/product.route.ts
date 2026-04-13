@@ -18,7 +18,8 @@ router.post(
     checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
     multerUpload.fields([
         { name: "images", maxCount: 10 },
-        { name: "featureImages", maxCount: 10 }
+        { name: "featureImages", maxCount: 10 },
+        { name: "video", maxCount: 1 } 
     ]),
     validateRequest(createProductZodSchema),
     ProductController.createProduct

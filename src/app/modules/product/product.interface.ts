@@ -21,6 +21,7 @@ export interface IProduct {
   metaDescription?: string;
   specifications?: ISpecification[]; // Table data
   images?: string[];            // Main gallery images
+  video?: string;               // Video URL
   featureImages?: string[];     // Images specifically for the Features tab
   basePrice: number; 
   variations: IProductVariation[];
