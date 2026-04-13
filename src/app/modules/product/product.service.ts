@@ -79,29 +79,43 @@ const getProductShortInfo = async (query: Record<string, string>) => {
         meta
     };
 };
+// Ensure you import mongoose if you need to validate ObjectIds
+// import mongoose from 'mongoose';
 
 const getRelativeProducts = async (query: Record<string, string>) => {
+    // 1. Clone the query so we don't mutate the original request
     const queryObj = { ...query };
+
+    // 2. Extract necessary variables for the related products logic
     const { category_id, current_product_id } = queryObj;
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const filterConditions: Record<string, any> = {};
 
+    // Filter by the provided category
     if (category_id) {
         filterConditions.category = category_id;
+        // Delete it from queryObj so QueryBuilder doesn't process it redundantly
         delete queryObj.category_id; 
     }
 
+    // Skip the current product
     if (current_product_id) {
+        // Use MongoDB's $ne (not equal) operator
         filterConditions._id = { $ne: current_product_id };
+        // Delete it from queryObj
         delete queryObj.current_product_id; 
     }
 
+    // 4. Create the base query with the applied filters and .select()
     const baseQuery = Product.find(filterConditions)
                              .select('_id name images slug description')
                              .populate('category');
 
+    // 5. Pass the pre-filtered query into the QueryBuilder
     const queryBuilder = new QueryBuilder(baseQuery, queryObj);
 
+    // Let the QueryBuilder handle search, sort, fields, and pagination
     const products = await queryBuilder
         .search(productSearchableFields)
         .filter()
@@ -110,7 +124,7 @@ const getRelativeProducts = async (query: Record<string, string>) => {
         .paginate();
 
     const [data, meta] = await Promise.all([
-        products.build(),
+        products.build(), // or products.modelQuery depending on your setup
         queryBuilder.getMeta()
     ]);
 
