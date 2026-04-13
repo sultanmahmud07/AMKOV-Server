@@ -18,8 +18,8 @@ const createProduct = async (payload: IProduct) => {
 };
 
 const getAllProducts = async (query: Record<string, string>) => {
-const queryObj = { ...query };
-  if (queryObj.category_slug) {
+    const queryObj = { ...query };
+    if (queryObj.category_slug) {
         const category = await Category.findOne({ slug: queryObj.category_slug }).select('_id');
 
         if (!category) {
@@ -66,11 +66,33 @@ const getProductShortInfo = async (query: Record<string, string>) => {
         .search(productSearchableFields)
         .filter()
         .sort()
-        .fields() 
+        .fields()
         .paginate();
 
     const [data, meta] = await Promise.all([
-        products.build(), 
+        products.build(),
+        queryBuilder.getMeta()
+    ]);
+
+    return {
+        data,
+        meta
+    };
+};
+const getRelativeProducts = async (query: Record<string, string>) => {
+    const baseQuery = Product.find().select('_id name images slug description').populate('category', '_id name slug');
+
+    const queryBuilder = new QueryBuilder(baseQuery, query);
+
+    const products = await queryBuilder
+        .search(productSearchableFields)
+        .filter()
+        .sort()
+        .fields()
+        .paginate();
+
+    const [data, meta] = await Promise.all([
+        products.build(),
         queryBuilder.getMeta()
     ]);
 
@@ -139,6 +161,7 @@ export const ProductService = {
     createProduct,
     getSingleProduct,
     getAllProducts,
+    getRelativeProducts,
     getProductShortInfo,
     updateProduct,
     deleteProduct,
