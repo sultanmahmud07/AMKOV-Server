@@ -79,10 +79,28 @@ const getProductShortInfo = async (query: Record<string, string>) => {
         meta
     };
 };
-const getRelativeProducts = async (query: Record<string, string>) => {
-    const baseQuery = Product.find().select('_id name images slug description').populate('category', '_id name slug');
 
-    const queryBuilder = new QueryBuilder(baseQuery, query);
+const getRelativeProducts = async (query: Record<string, string>) => {
+    const queryObj = { ...query };
+    const { category_id, current_product_id } = queryObj;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const filterConditions: Record<string, any> = {};
+
+    if (category_id) {
+        filterConditions.category = category_id;
+        delete queryObj.category_id; 
+    }
+
+    if (current_product_id) {
+        filterConditions._id = { $ne: current_product_id };
+        delete queryObj.current_product_id; 
+    }
+
+    const baseQuery = Product.find(filterConditions)
+                             .select('_id name images slug description')
+                             .populate('category');
+
+    const queryBuilder = new QueryBuilder(baseQuery, queryObj);
 
     const products = await queryBuilder
         .search(productSearchableFields)
@@ -104,7 +122,7 @@ const getRelativeProducts = async (query: Record<string, string>) => {
 
 
 const getSingleProduct = async (slug: string) => {
-    const tour = await Product.findOne({ slug });
+    const tour = await Product.findOne({ slug }).populate('category');
     return {
         data: tour,
     }
