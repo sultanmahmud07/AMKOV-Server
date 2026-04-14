@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/consistent-indexed-object-style */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextFunction, Request, Response } from "express";
@@ -15,17 +16,36 @@ export const globalErrorHandler = async (err: any, req: Request, res: Response, 
         // eslint-disable-next-line no-console
         console.log(err);
     }
-    if (req?.file) {
-        const fileKey = (req.file as any).key;
-        await deleteFileFromS3(fileKey);
-    }
+   try {
+        // 1. Handle multer.single() uploads
+        if (req?.file) {
+            const fileKey = (req.file as any).key;
+            if (fileKey) await deleteFileFromS3(fileKey);
+        }
 
-    if (req.files && Array.isArray(req.files) && req.files.length) {
-        const fileKeys = (req.files as Express.Multer.File[]).map(
-            (file: any) => file.key
-        );
+        // 2. Handle file uploads (Array or Object)
+        if (req?.files) {
+            let fileKeys: string[] = [];
 
-        await Promise.all(fileKeys.map((key) => deleteFileFromS3(key)));
+            if (Array.isArray(req.files)) {
+                // A. Handle multer.array() -> req.files is a direct array
+                fileKeys = (req.files as any[]).map((file) => file.key);
+            } else {
+                // B. Handle multer.fields() -> req.files is an object of arrays
+                // Object.values extracts the arrays, and .flat() merges them into one single array
+                const filesObject = req.files as { [fieldname: string]: any[] };
+                const allFiles = Object.values(filesObject).flat();
+                fileKeys = allFiles.map((file) => file.key);
+            }
+
+            // Clean up any undefined keys just in case, then delete from S3
+            const validKeys = fileKeys.filter(Boolean);
+            if (validKeys.length > 0) {
+                await Promise.all(validKeys.map((key) => deleteFileFromS3(key)));
+            }
+        }
+    } catch (cleanupError) {
+        console.error("Failed to clean up S3 files during error handling:", cleanupError);
     }
     let errorSources: TErrorSources[] = []
     let statusCode = 500
