@@ -9,7 +9,6 @@ import { IInstruction } from "./Instruction.interface";
 const createInstruction = catchAsync(async (req: Request, res: Response) => {
     // Cast req.files to handle the structure created by multer.fields()
     const files = req.files as { [fieldname: string]: Express.MulterS3.File[] };
-    console.log("Controller:", req.files)
     // Safely extract the files
     const thumbnailFile = files?.['thumbnail']?.[0];
     const pdfFile = files?.['pdfFile']?.[0];

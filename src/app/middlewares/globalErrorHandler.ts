@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/consistent-indexed-object-style */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -13,7 +14,6 @@ import { deleteFileFromS3 } from "../config/aws.config";
 
 export const globalErrorHandler = async (err: any, req: Request, res: Response, next: NextFunction) => {
     if (envVars.NODE_ENV === "development") {
-        // eslint-disable-next-line no-console
         console.log(err);
     }
    try {
