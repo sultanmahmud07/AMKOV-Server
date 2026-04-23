@@ -15,17 +15,17 @@ const catchAsync_1 = require("../../utils/catchAsync");
 const sendResponse_1 = require("../../utils/sendResponse");
 const product_service_1 = require("./product.service");
 const createProduct = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    // const files = req.files as Express.MulterS3.File[];
-    // const payload: IProduct = {
-    //     ...req.body,
-    //     images: files?.map(file => file.location), // ✅ S3 URLs
-    // };
     // Cast req.files to handle the structure created by multer.fields()
     const files = req.files;
     // Safely extract the arrays (default to empty array if undefined)
     const galleryFiles = (files === null || files === void 0 ? void 0 : files['images']) || [];
     const featureFiles = (files === null || files === void 0 ? void 0 : files['featureImages']) || [];
+    const videoFiles = (files === null || files === void 0 ? void 0 : files['video']) || [];
     const payload = Object.assign(Object.assign({}, req.body), { images: galleryFiles.map(file => file.location), featureImages: featureFiles.map(file => file.location) });
+    // Safely check if a video was actually uploaded before adding it to payload
+    if (videoFiles.length > 0) {
+        payload.video = videoFiles[0].location; // <-- Grab the S3 URL of the first (and only) video
+    }
     const result = yield product_service_1.ProductService.createProduct(payload);
     (0, sendResponse_1.sendResponse)(res, {
         statusCode: 201,
@@ -45,6 +45,28 @@ const getAllProducts = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void
         meta: result.meta,
     });
 }));
+const getProductShortInfo = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const query = req.query;
+    const result = yield product_service_1.ProductService.getProductShortInfo(query);
+    (0, sendResponse_1.sendResponse)(res, {
+        statusCode: 200,
+        success: true,
+        message: 'Products short info retrieved successfully',
+        data: result.data,
+        meta: result.meta,
+    });
+}));
+const getRelativeProducts = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const query = req.query;
+    const result = yield product_service_1.ProductService.getRelativeProducts(query);
+    (0, sendResponse_1.sendResponse)(res, {
+        statusCode: 200,
+        success: true,
+        message: 'Relative products retrieved successfully',
+        data: result.data,
+        meta: result.meta,
+    });
+}));
 const getSingleProduct = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const slug = req.params.slug;
     const result = yield product_service_1.ProductService.getSingleProduct(slug);
@@ -56,7 +78,30 @@ const getSingleProduct = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(vo
     });
 }));
 const updateProduct = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const payload = Object.assign(Object.assign({}, req.body), { images: req.files.map(file => file.path) });
+    const files = req.files;
+    const galleryFiles = (files === null || files === void 0 ? void 0 : files['images']) || [];
+    const featureFiles = (files === null || files === void 0 ? void 0 : files['featureImages']) || [];
+    const videoFiles = (files === null || files === void 0 ? void 0 : files['video']) || [];
+    // 1. Safely extract existing images from req.body (FormData can send string or array)
+    let existingImages = [];
+    if (req.body.images) {
+        existingImages = Array.isArray(req.body.images) ? req.body.images : [req.body.images];
+    }
+    let existingFeatureImages = [];
+    if (req.body.featureImages) {
+        existingFeatureImages = Array.isArray(req.body.featureImages) ? req.body.featureImages : [req.body.featureImages];
+    }
+    // 2. Use Partial<IProduct> since an update might not include every required field
+    const payload = Object.assign(Object.assign({}, req.body), { 
+        // 3. MERGE the existing images with the newly uploaded ones
+        images: [...existingImages, ...galleryFiles.map(file => file.location)], featureImages: [...existingFeatureImages, ...featureFiles.map(file => file.location)] });
+    // 4. Handle Video safely
+    if (videoFiles.length > 0) {
+        payload.video = videoFiles[0].location; // New video uploaded
+    }
+    else if (req.body.video) {
+        payload.video = req.body.video; // Keep existing video
+    }
     const result = yield product_service_1.ProductService.updateProduct(req.params.id, payload);
     (0, sendResponse_1.sendResponse)(res, {
         statusCode: 200,
@@ -78,6 +123,8 @@ const deleteProduct = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 
 exports.ProductController = {
     createProduct,
     getAllProducts,
+    getProductShortInfo,
+    getRelativeProducts,
     getSingleProduct,
     updateProduct,
     deleteProduct,

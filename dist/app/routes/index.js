@@ -14,6 +14,7 @@ const message_route_1 = require("../modules/message/message.route");
 const blog_route_1 = require("../modules/blog/blog.route");
 const product_route_1 = require("../modules/product/product.route");
 const category_route_1 = require("../modules/category/category.route");
+const Instruction_route_1 = require("../modules/Instruction/Instruction.route");
 exports.router = (0, express_1.Router)();
 const moduleRoutes = [
     {
@@ -31,6 +32,10 @@ const moduleRoutes = [
     {
         path: "/product",
         route: product_route_1.ProductRoutes
+    },
+    {
+        path: "/instruction",
+        route: Instruction_route_1.InstructionRoutes
     },
     {
         path: "/booking",

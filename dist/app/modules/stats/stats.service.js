@@ -16,11 +16,13 @@ exports.StatsService = exports.getAdminStats = exports.getGuideStats = exports.g
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const mongoose_1 = __importDefault(require("mongoose"));
 const booking_model_1 = require("../booking/booking.model");
-const user_model_1 = require("../user/user.model");
 const review_model_1 = require("../review/review.model");
 const tour_model_1 = require("../tour/tour.model");
 const payment_model_1 = require("../payment/payment.model");
-const payment_interface_1 = require("../payment/payment.interface");
+const product_model_1 = require("../product/product.model");
+const contact_model_1 = require("../contact/contact.model");
+const category_model_1 = require("../category/category.model");
+const user_model_1 = require("../user/user.model"); // ✅ Uncommented
 const getTouristStats = (touristId) => __awaiter(void 0, void 0, void 0, function* () {
     // Basic counts
     const totalBookings = yield booking_model_1.Booking.countDocuments({ user: touristId });
@@ -171,51 +173,46 @@ const getAdminStats = () => __awaiter(void 0, void 0, void 0, function* () {
     sevenDaysAgo.setDate(now.getDate() - 7);
     const thirtyDaysAgo = new Date(now);
     thirtyDaysAgo.setDate(now.getDate() - 30);
-    const yearAgo = new Date(now);
-    yearAgo.setFullYear(now.getFullYear() - 1);
-    // Basic counts (run in parallel)
-    const totalUsersP = user_model_1.User.countDocuments();
-    const totalToursP = tour_model_1.Tour.countDocuments();
-    const totalBookingsP = booking_model_1.Booking.countDocuments();
-    const totalPaymentsP = payment_model_1.Payment.countDocuments();
-    const totalReviewsP = review_model_1.Review.countDocuments();
-    const bookingsConfirmedP = booking_model_1.Booking.countDocuments({ status: "CONFIRMED" });
-    const bookingsPendingP = booking_model_1.Booking.countDocuments({ status: "PENDING" });
-    const bookingsCompletedP = booking_model_1.Booking.countDocuments({ status: "COMPLETED" });
-    const bookingsCancelledP = booking_model_1.Booking.countDocuments({ status: "CANCELLED" });
+    // 1. Basic Counts
+    const totalProductsP = product_model_1.Product.countDocuments();
+    const totalCategoriesP = category_model_1.Category.countDocuments();
+    const totalInquiriesP = contact_model_1.Contact.countDocuments();
+    const totalUsersP = user_model_1.User.countDocuments(); // ✅ Added
+    // 2. Inquiry Breakdown
+    const productInquiriesP = contact_model_1.Contact.countDocuments({ inquiryType: "PRODUCT" });
+    const generalInquiriesP = contact_model_1.Contact.countDocuments({ inquiryType: "GENERAL" });
+    // 3. New Additions (Growth metrics)
+    const newProductsLast30P = product_model_1.Product.countDocuments({ createdAt: { $gte: thirtyDaysAgo } });
+    const newInquiriesLast7P = contact_model_1.Contact.countDocuments({ createdAt: { $gte: sevenDaysAgo } });
+    const newInquiriesLast30P = contact_model_1.Contact.countDocuments({ createdAt: { $gte: thirtyDaysAgo } });
+    // ✅ User Growth Metrics
     const newUsersLast7P = user_model_1.User.countDocuments({ createdAt: { $gte: sevenDaysAgo } });
     const newUsersLast30P = user_model_1.User.countDocuments({ createdAt: { $gte: thirtyDaysAgo } });
-    const newToursLast30P = tour_model_1.Tour.countDocuments({ createdAt: { $gte: thirtyDaysAgo } });
-    // Recent items (last 5)
-    const recentBookingsP = booking_model_1.Booking.find()
+    // 4. Low Stock Alert
+    const lowStockProductsP = product_model_1.Product.find({ "variations.stock": { $lt: 10 } })
+        .select("name slug variations images")
+        .limit(5)
+        .lean();
+    // 5. Recent Activity (Last 5)
+    const recentInquiriesP = contact_model_1.Contact.find()
         .sort({ createdAt: -1 })
         .limit(5)
-        .populate("tour", "title fee")
-        .populate("user", "name email")
-        .populate("guide", "name email")
-        .populate("payment", "status amount transactionId")
+        .populate("products", "name basePrice")
         .lean();
-    const recentPaymentsP = payment_model_1.Payment.find()
+    const recentProductsP = product_model_1.Product.find()
         .sort({ createdAt: -1 })
         .limit(5)
-        .populate({
-        path: "booking",
-        select: "tour user guide date time totalPrice status",
-        populate: [
-            { path: "tour", select: "title fee" },
-            { path: "user", select: "name email" },
-            { path: "guide", select: "name email" },
-        ],
-    })
+        .populate("category", "name")
         .lean();
-    // Total revenue (sum of PAID payments)
-    const revenueAggP = payment_model_1.Payment.aggregate([
-        { $match: { status: payment_interface_1.PAYMENT_STATUS.PAID } },
-        { $group: { _id: null, totalRevenue: { $sum: "$amount" } } },
-    ]);
-    // Revenue time-series for last 30 days (daily)
-    const revenueTimeSeriesP = payment_model_1.Payment.aggregate([
-        { $match: { status: payment_interface_1.PAYMENT_STATUS.PAID, createdAt: { $gte: thirtyDaysAgo } } },
+    // ✅ Recent Users
+    const recentUsersP = user_model_1.User.find()
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select("name email role createdAt") // Select safe fields only
+        .lean();
+    // 6. Inquiry Time-Series
+    const inquiryTimeSeriesP = contact_model_1.Contact.aggregate([
+        { $match: { createdAt: { $gte: thirtyDaysAgo } } },
         {
             $group: {
                 _id: {
@@ -223,7 +220,7 @@ const getAdminStats = () => __awaiter(void 0, void 0, void 0, function* () {
                     month: { $month: "$createdAt" },
                     day: { $dayOfMonth: "$createdAt" },
                 },
-                total: { $sum: "$amount" },
+                total: { $sum: 1 },
             },
         },
         {
@@ -241,111 +238,65 @@ const getAdminStats = () => __awaiter(void 0, void 0, void 0, function* () {
         },
         { $sort: { date: 1 } },
     ]);
-    // Bookings per status (group)
-    const bookingsByStatusP = booking_model_1.Booking.aggregate([
+    // 7. Top Products by Inquiry Count
+    const topProductsByInquiriesP = contact_model_1.Contact.aggregate([
+        { $match: { inquiryType: "PRODUCT" } },
+        { $unwind: "$products" },
         {
             $group: {
-                _id: "$status",
-                count: { $sum: 1 },
+                _id: "$products",
+                inquiryCount: { $sum: 1 },
             },
         },
-    ]);
-    // Top guides by earnings (sum of PAID payments for bookings where booking.guide == guide)
-    const topGuidesByEarningsP = booking_model_1.Booking.aggregate([
-        // join payments
-        {
-            $lookup: {
-                from: "payments",
-                localField: "payment",
-                foreignField: "_id",
-                as: "paymentData",
-            },
-        },
-        { $unwind: { path: "$paymentData", preserveNullAndEmptyArrays: true } },
-        { $match: { "paymentData.status": payment_interface_1.PAYMENT_STATUS.PAID } },
-        {
-            $group: {
-                _id: "$guide",
-                earnings: { $sum: "$paymentData.amount" },
-                bookingsCount: { $sum: 1 },
-            },
-        },
-        { $sort: { earnings: -1 } },
-        { $limit: 5 },
-        {
-            $lookup: {
-                from: "users",
-                localField: "_id",
-                foreignField: "_id",
-                as: "guide",
-            },
-        },
-        { $unwind: { path: "$guide", preserveNullAndEmptyArrays: true } },
-        {
-            $project: {
-                guideId: "$_id",
-                earnings: 1,
-                bookingsCount: 1,
-                guide: { name: "$guide.name", email: "$guide.email", _id: "$guide._id", picture: "$guide.picture" },
-            },
-        },
-    ]);
-    // Top tours by bookings count
-    const topToursByBookingsP = booking_model_1.Booking.aggregate([
-        {
-            $group: {
-                _id: "$tour",
-                bookingsCount: { $sum: 1 },
-            },
-        },
-        { $sort: { bookingsCount: -1 } },
+        { $sort: { inquiryCount: -1 } },
         { $limit: 6 },
         {
             $lookup: {
-                from: "tours",
+                from: "products",
                 localField: "_id",
                 foreignField: "_id",
-                as: "tour",
+                as: "product",
             },
         },
-        { $unwind: { path: "$tour", preserveNullAndEmptyArrays: true } },
+        { $unwind: { path: "$product", preserveNullAndEmptyArrays: true } },
         {
             $project: {
-                tourId: "$_id",
-                bookingsCount: 1,
-                tour: { title: "$tour.title", fee: "$tour.fee", destinationCity: "$tour.destinationCity", _id: "$tour._id", thumbnail: "$tour.thumbnail" },
+                productId: "$_id",
+                inquiryCount: 1,
+                product: {
+                    name: "$product.name",
+                    basePrice: "$product.basePrice",
+                    slug: "$product.slug",
+                    image: { $arrayElemAt: ["$product.images", 0] }
+                },
             },
         },
     ]);
     // Run all promises in parallel
-    const [totalUsers, totalTours, totalBookings, totalPayments, totalReviews, bookingsConfirmed, bookingsPending, bookingsCompleted, bookingsCancelled, newUsersLast7, newUsersLast30, newToursLast30, recentBookings, recentPayments, revenueAgg, revenueTimeSeries, bookingsByStatus, topGuidesByEarnings, topToursByBookings,] = yield Promise.all([
-        totalUsersP,
-        totalToursP,
-        totalBookingsP,
-        totalPaymentsP,
-        totalReviewsP,
-        bookingsConfirmedP,
-        bookingsPendingP,
-        bookingsCompletedP,
-        bookingsCancelledP,
-        newUsersLast7P,
-        newUsersLast30P,
-        newToursLast30P,
-        recentBookingsP,
-        recentPaymentsP,
-        revenueAggP,
-        revenueTimeSeriesP,
-        bookingsByStatusP,
-        topGuidesByEarningsP,
-        topToursByBookingsP,
+    const [totalProducts, totalCategories, totalInquiries, totalUsers, // ✅
+    productInquiries, generalInquiries, newProductsLast30, newInquiriesLast7, newInquiriesLast30, newUsersLast7, // ✅
+    newUsersLast30, // ✅
+    lowStockProducts, recentInquiries, recentProducts, recentUsers, // ✅
+    inquiryTimeSeries, topProductsByInquiries,] = yield Promise.all([
+        totalProductsP,
+        totalCategoriesP,
+        totalInquiriesP,
+        totalUsersP, // ✅
+        productInquiriesP,
+        generalInquiriesP,
+        newProductsLast30P,
+        newInquiriesLast7P,
+        newInquiriesLast30P,
+        newUsersLast7P, // ✅
+        newUsersLast30P, // ✅
+        lowStockProductsP,
+        recentInquiriesP,
+        recentProductsP,
+        recentUsersP, // ✅
+        inquiryTimeSeriesP,
+        topProductsByInquiriesP,
     ]);
-    const totalRevenue = (revenueAgg && revenueAgg[0] && revenueAgg[0].totalRevenue) || 0;
-    // Normalize bookingsByStatus to key:value map
-    const bookingsByStatusMap = {};
-    bookingsByStatus.forEach((b) => {
-        bookingsByStatusMap[String(b._id || "UNKNOWN")] = b.count || 0;
-    });
-    // Prepare revenue time-series for charting (fill missing days)
+    // Prepare Inquiry time-series for charting
     const days = [];
     const start = new Date(thirtyDaysAgo);
     for (let d = new Date(start); d <= now; d.setDate(d.getDate() + 1)) {
@@ -354,42 +305,45 @@ const getAdminStats = () => __awaiter(void 0, void 0, void 0, function* () {
             total: 0,
         });
     }
-    // map results
-    const revenueMap = new Map();
-    (revenueTimeSeries || []).forEach((r) => {
+    // Map results
+    const inquiryMap = new Map();
+    (inquiryTimeSeries || []).forEach((r) => {
         const key = new Date(r.date).toISOString().slice(0, 10);
-        revenueMap.set(key, r.total || 0);
+        inquiryMap.set(key, r.total || 0);
     });
-    const revenueSeries = days.map((day) => ({ date: day.date, total: revenueMap.get(day.date) || 0 }));
+    const inquirySeries = days.map((day) => ({
+        date: day.date,
+        total: inquiryMap.get(day.date) || 0
+    }));
     return {
         data: {
             summary: {
-                totalUsers,
-                totalTours,
-                totalBookings,
-                totalPayments,
-                totalReviews,
-                totalRevenue,
+                totalProducts,
+                totalCategories,
+                totalInquiries,
+                totalUsers, // ✅ Added to summary
             },
             counts: {
-                bookings: {
-                    confirmed: bookingsConfirmed,
-                    pending: bookingsPending,
-                    completed: bookingsCompleted,
-                    cancelled: bookingsCancelled,
+                inquiries: {
+                    product: productInquiries,
+                    general: generalInquiries,
                 },
-                newUsersLast7,
-                newUsersLast30,
-                newToursLast30,
+                newProductsLast30,
+                newInquiriesLast7,
+                newInquiriesLast30,
+                newUsersLast7, // ✅ Added to counts
+                newUsersLast30, // ✅ Added to counts
+            },
+            alerts: {
+                lowStockProducts,
             },
             recent: {
-                bookings: recentBookings,
-                payments: recentPayments,
+                inquiries: recentInquiries,
+                products: recentProducts,
+                users: recentUsers, // ✅ Added to recent activity
             },
-            bookingsByStatus: bookingsByStatusMap,
-            revenueSeries, // [{date: '2025-12-01', total: 123}, ...] (last 30 days)
-            topGuidesByEarnings,
-            topToursByBookings,
+            inquirySeries,
+            topProductsByInquiries,
         },
     };
 });

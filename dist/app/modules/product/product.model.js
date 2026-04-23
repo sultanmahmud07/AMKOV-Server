@@ -17,9 +17,16 @@ const productSchema = new mongoose_1.Schema({
     slug: { type: String, required: true, unique: true },
     bulletPoints: { type: [String], default: [] },
     description: { type: String }, // Stores your HTML string
+    metaTitle: { type: String },
+    metaDescription: { type: String },
     specifications: { type: [specificationSchema], default: [] },
     images: { type: [String], default: [] },
+    video: { type: String }, // Store the video URL directly
     deleteImages: { type: [String], default: [] },
+    isFeatured: { type: Boolean, default: false },
+    isMenu: { type: Boolean },
+    isTrendy: { type: Boolean },
+    orderBy: { type: Number, default: 0 },
     featureImages: { type: [String], default: [] },
     basePrice: { type: Number, required: true },
     variations: [productVariationSchema],

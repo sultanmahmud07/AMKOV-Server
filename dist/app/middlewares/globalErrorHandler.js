@@ -22,16 +22,38 @@ const handlerZodError_1 = require("../helpers/handlerZodError");
 const aws_config_1 = require("../config/aws.config");
 const globalErrorHandler = (err, req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     if (env_1.envVars.NODE_ENV === "development") {
-        // eslint-disable-next-line no-console
         console.log(err);
     }
-    if (req === null || req === void 0 ? void 0 : req.file) {
-        const fileKey = req.file.key;
-        yield (0, aws_config_1.deleteFileFromS3)(fileKey);
+    try {
+        // 1. Handle multer.single() uploads
+        if (req === null || req === void 0 ? void 0 : req.file) {
+            const fileKey = req.file.key;
+            if (fileKey)
+                yield (0, aws_config_1.deleteFileFromS3)(fileKey);
+        }
+        // 2. Handle file uploads (Array or Object)
+        if (req === null || req === void 0 ? void 0 : req.files) {
+            let fileKeys = [];
+            if (Array.isArray(req.files)) {
+                // A. Handle multer.array() -> req.files is a direct array
+                fileKeys = req.files.map((file) => file.key);
+            }
+            else {
+                // B. Handle multer.fields() -> req.files is an object of arrays
+                // Object.values extracts the arrays, and .flat() merges them into one single array
+                const filesObject = req.files;
+                const allFiles = Object.values(filesObject).flat();
+                fileKeys = allFiles.map((file) => file.key);
+            }
+            // Clean up any undefined keys just in case, then delete from S3
+            const validKeys = fileKeys.filter(Boolean);
+            if (validKeys.length > 0) {
+                yield Promise.all(validKeys.map((key) => (0, aws_config_1.deleteFileFromS3)(key)));
+            }
+        }
     }
-    if (req.files && Array.isArray(req.files) && req.files.length) {
-        const fileKeys = req.files.map((file) => file.key);
-        yield Promise.all(fileKeys.map((key) => (0, aws_config_1.deleteFileFromS3)(key)));
+    catch (cleanupError) {
+        console.error("Failed to clean up S3 files during error handling:", cleanupError);
     }
     let errorSources = [];
     let statusCode = 500;

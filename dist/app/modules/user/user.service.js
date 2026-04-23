@@ -109,7 +109,7 @@ const getAllUsers = (query) => __awaiter(void 0, void 0, void 0, function* () {
     };
 });
 const getAllAdmin = (query) => __awaiter(void 0, void 0, void 0, function* () {
-    const queryBuilder = new QueryBuilder_1.QueryBuilder(user_model_1.User.find({ role: "ADMIN" }), query);
+    const queryBuilder = new QueryBuilder_1.QueryBuilder(user_model_1.User.find({ role: { $in: ["ADMIN", "SUPER_ADMIN"] } }), query);
     const users = yield queryBuilder
         .search(user_constant_1.userSearchableFields)
         .filter()

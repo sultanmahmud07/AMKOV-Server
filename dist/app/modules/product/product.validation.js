@@ -16,10 +16,32 @@ exports.createProductZodSchema = zod_1.z.object({
     name: zod_1.z.string(),
     slug: zod_1.z.string(),
     description: zod_1.z.string().optional(),
+    metaTitle: zod_1.z.string().optional(),
+    metaDescription: zod_1.z.string().optional(),
     basePrice: zod_1.z.number(), // Back to normal!
     category: zod_1.z.string().optional(),
+    video: zod_1.z.string().optional(), // New field for video URL
+    isFeatured: zod_1.z.boolean().optional(),
+    isMenu: zod_1.z.boolean().optional(),
+    isTrendy: zod_1.z.boolean().optional(),
     bulletPoints: zod_1.z.array(zod_1.z.string()).optional(), // Back to normal!
     specifications: zod_1.z.array(specificationSchema).optional(), // Back to normal!
     variations: zod_1.z.array(productVariationSchema).min(1, "At least one variation is required"),
 });
-exports.updateProductZodSchema = zod_1.z.object({});
+exports.updateProductZodSchema = zod_1.z.object({
+    name: zod_1.z.string().optional(),
+    slug: zod_1.z.string().optional(),
+    description: zod_1.z.string().optional(),
+    metaTitle: zod_1.z.string().optional(),
+    metaDescription: zod_1.z.string().optional(),
+    basePrice: zod_1.z.number().optional(),
+    category: zod_1.z.string().optional(),
+    video: zod_1.z.string().optional(),
+    isFeatured: zod_1.z.boolean().optional(),
+    deleteImages: zod_1.z.array(zod_1.z.string()).optional(),
+    isMenu: zod_1.z.boolean().optional(),
+    isTrendy: zod_1.z.boolean().optional(),
+    bulletPoints: zod_1.z.array(zod_1.z.string()).optional(),
+    specifications: zod_1.z.array(specificationSchema).optional(),
+    variations: zod_1.z.array(productVariationSchema).min(1, "At least one variation is required").optional(),
+});
