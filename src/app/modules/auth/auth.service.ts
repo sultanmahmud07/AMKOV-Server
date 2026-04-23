@@ -128,7 +128,6 @@ const getMe = async (userId: string) => {
 };
 
 export const AuthServices = {
-    // credentialsLogin,
     getNewAccessToken,
     getMe,
     changePassword,
