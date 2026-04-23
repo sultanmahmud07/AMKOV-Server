@@ -25,8 +25,15 @@ app.use((0, cookie_parser_1.default)());
 app.use(express_1.default.json());
 app.set("trust proxy", 1);
 app.use((0, cors_1.default)({
-    origin: ["http://localhost:3000", "http://52.55.98.134:3001", "https://52.55.98.134:3001", "https://admin.amkov.com", "https://amkov.com", "https://www.amkov.com", "https://api.amkov.com"],
-    // methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
+    origin: [
+        "http://localhost:3000",
+        "http://52.55.98.134:3001",
+        "https://52.55.98.134:3001",
+        "https://admin.amkov.com",
+        "https://amkov.com",
+        "https://www.amkov.com",
+        "https://api.amkov.com"
+    ],
     credentials: true,
 }));
 app.use("/api/v1", routes_1.router);
@@ -271,11 +278,6 @@ app.get("/", (req, res) => {
     `;
     res.status(200).send(htmlContent);
 });
-// app.get("/", (req: Request, res: Response) => {
-//     res.status(200).json({
-//         message: "Welcome to AMKOV Website API"
-//     })
-// })
 app.use(globalErrorHandler_1.globalErrorHandler);
 app.use(notFound_1.default);
 exports.default = app;
