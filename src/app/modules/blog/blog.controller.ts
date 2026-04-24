@@ -6,11 +6,11 @@ import { BlogService } from './blog.service';
 import { IBlog } from './blog.interface';
 
 const createBlog = catchAsync(async (req: Request, res: Response) => {
-          const file = req.file as Express.MulterS3.File;
-            const payload: IBlog = {
-                ...req.body,
-                thumbnail: file?.location
-            }
+    const file = req.file as Express.MulterS3.File;
+    const payload: IBlog = {
+        ...req.body,
+        thumbnail: file?.location
+    }
     const result = await BlogService.createBlog(payload);
     sendResponse(res, {
         statusCode: 201,
@@ -44,9 +44,10 @@ const getSingleBlog = catchAsync(async (req: Request, res: Response) => {
     });
 });
 const updateBlog = catchAsync(async (req: Request, res: Response) => {
+    const file = req.file as Express.MulterS3.File;
     const payload: IBlog = {
         ...req.body,
-       thumbnail: req.file?.path
+        thumbnail: file?.location
     }
     const result = await BlogService.updateBlog(req.params.id, payload);
     sendResponse(res, {

@@ -20,6 +20,7 @@ const blogSchema = new Schema<IBlog>(
     content: { type: String, required: true },
     author: { type: Schema.Types.ObjectId, ref: "User" },
     thumbnail: String,
+    deletedThumbnail: String,
     views: { type: Number, default: 0 },
     isPublished: { type: Boolean, default: true },
   },

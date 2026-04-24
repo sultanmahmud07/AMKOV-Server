@@ -12,6 +12,7 @@ import { BlogRoutes } from "../modules/blog/blog.route"
 import { ProductRoutes } from "../modules/product/product.route"
 import { CategoryRoutes } from "../modules/category/category.route"
 import { InstructionRoutes } from "../modules/Instruction/Instruction.route"
+import { FaqRoutes } from "../modules/faq/faq.route"
 
 export const router = Router()
 
@@ -35,6 +36,10 @@ const moduleRoutes = [
     {
         path: "/instruction",
         route: InstructionRoutes
+    },
+    {
+        path: "/faq",
+        route: FaqRoutes
     },
     {
         path: "/booking",

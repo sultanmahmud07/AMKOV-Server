@@ -64,8 +64,8 @@ const updateBlog = async (id: string, payload: Partial<IBlog>) => {
         throw new Error("A blog with this slug already exists.");
     }
     const updatedBlog = await Blog.findByIdAndUpdate(id, payload, { new: true });
-    if (payload.thumbnail && existingBlog.thumbnail) {
-        await deleteImageFromCLoudinary(existingBlog.thumbnail)
+    if (payload.deletedThumbnail && existingBlog.deletedThumbnail) {
+        await deleteImageFromCLoudinary(existingBlog.deletedThumbnail)
     }
     return updatedBlog;
 };

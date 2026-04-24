@@ -18,6 +18,7 @@ export interface IBlog {
   content: string;
   author?: Types.ObjectId;
   thumbnail?: string;
+  deletedThumbnail?: string;
   views?: number; // ✅ Track blog views
   isPublished?: boolean;
 }
