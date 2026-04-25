@@ -5,7 +5,7 @@ const productVariationSchema = new Schema<IProductVariation>({
   size: { type: String },
   color: { type: String },
   stock: { type: Number, required: true, default: 0 },
-  price: { type: Number }, 
+  price: { type: Number },
 }, { _id: false });
 
 const specificationSchema = new Schema<ISpecification>({
@@ -28,11 +28,17 @@ const productSchema = new Schema<IProduct>(
     isFeatured: { type: Boolean, default: false },
     isMenu: { type: Boolean },
     isTrendy: { type: Boolean },
-    orderBy: { type: Number, default: 0 },
     featureImages: { type: [String], default: [] },
     basePrice: { type: Number, required: true },
     variations: [productVariationSchema],
-    category: { type: Schema.Types.ObjectId, ref: "Category" },
+    categories: [{
+      type: Schema.Types.ObjectId,
+      ref: "Category"
+    }],
+    orderBy: {
+      type: Number,
+      default: 9999 // Give un-ordered products a high number so they fall to the bottom
+    },
   },
   { timestamps: true }
 );

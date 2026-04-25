@@ -5,7 +5,35 @@ import { catchAsync } from '../../utils/catchAsync';
 import { sendResponse } from '../../utils/sendResponse';
 import { IProduct } from './product.interface';
 import { ProductService } from './product.service';
+import { Product } from './product.model';
 
+const fixOrderDefaults = async (req: Request, res: Response) => {
+    try {
+        // Find products that still have the old 'category' field
+        const result = await Product.updateMany(
+            { category: { $exists: true, $ne: null } },
+            [
+                // Step 1: Set the new 'categories' array using the value of the old 'category'
+                { $set: { categories: ["$category"] } },
+
+                // Step 2: Completely remove the old 'category' field to clean up the database
+                { $unset: "category" }
+            ]
+        );
+
+        res.status(200).json({
+            success: true,
+            message: `Successfully migrated categories for ${result.modifiedCount} products.`,
+        });
+    } catch (error) {
+        console.error("Migration failed:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to migrate categories.",
+            error
+        });
+    }
+};
 const createProduct = catchAsync(async (req: Request, res: Response) => {
     // Cast req.files to handle the structure created by multer.fields()
     const files = req.files as { [fieldname: string]: Express.MulterS3.File[] };
@@ -132,6 +160,7 @@ const deleteProduct = catchAsync(async (req: Request, res: Response) => {
     });
 });
 export const ProductController = {
+    fixOrderDefaults,
     createProduct,
     getAllProducts,
     getProductShortInfo,

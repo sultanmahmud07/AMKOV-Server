@@ -19,6 +19,7 @@ const createProduct = async (payload: IProduct) => {
 
 const getAllProducts = async (query: Record<string, string>) => {
     const queryObj = { ...query };
+
     if (queryObj.category_slug) {
         const category = await Category.findOne({ slug: queryObj.category_slug }).select('_id');
 
@@ -34,23 +35,30 @@ const getAllProducts = async (query: Record<string, string>) => {
             };
         }
 
-        queryObj.category = category._id.toString();
+        queryObj.categories = category._id.toString();
         delete queryObj.category_slug;
     }
-    const queryBuilder = new QueryBuilder(Product.find().populate('category'), queryObj)
+
+    if (!queryObj.sort) {
+        // Sort by 'orderBy' ascending (1, 2, 3), then by 'createdAt' descending (newest first)
+        queryObj.sort = "orderBy,-createdAt";
+    }
+
+    // --- 3. POPULATE THE NEW ARRAY ---
+    // Update .populate('category') to .populate('categories')
+    const queryBuilder = new QueryBuilder(Product.find().populate('categories'), queryObj);
 
     const products = await queryBuilder
         .search(productSearchableFields)
         .filter()
         .sort()
         .fields()
-        .paginate()
+        .paginate();
 
     const [data, meta] = await Promise.all([
         products.build(),
         queryBuilder.getMeta()
-    ])
-
+    ]);
 
     return {
         data,
@@ -58,9 +66,32 @@ const getAllProducts = async (query: Record<string, string>) => {
     }
 };
 const getProductShortInfo = async (query: Record<string, string>) => {
-    const baseQuery = Product.find().select('_id name images slug description');
+    const queryObj = { ...query };
 
-    const queryBuilder = new QueryBuilder(baseQuery, query);
+    if (queryObj.category_slug) {
+        const category = await Category.findOne({ slug: queryObj.category_slug }).select('_id');
+
+        if (!category) {
+            return {
+                data: [],
+                meta: {
+                    page: Number(queryObj.page) || 1,
+                    limit: Number(queryObj.limit) || 10,
+                    total: 0,
+                    totalPage: 0
+                }
+            };
+        }
+
+        queryObj.categories = category._id.toString();
+        delete queryObj.category_slug;
+    }
+
+    if (!queryObj.sort) {
+        queryObj.sort = "orderBy,-createdAt";
+    }
+
+    const queryBuilder = new QueryBuilder(Product.find().select('_id name images slug description').populate('categories'), queryObj);
 
     const products = await queryBuilder
         .search(productSearchableFields)
@@ -79,8 +110,7 @@ const getProductShortInfo = async (query: Record<string, string>) => {
         meta
     };
 };
-// Ensure you import mongoose if you need to validate ObjectIds
-// import mongoose from 'mongoose';
+
 
 const getRelativeProducts = async (query: Record<string, string>) => {
     // 1. Clone the query so we don't mutate the original request
@@ -92,9 +122,12 @@ const getRelativeProducts = async (query: Record<string, string>) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const filterConditions: Record<string, any> = {};
 
-    // Filter by the provided category
+    // 3. Filter by the provided category
     if (category_id) {
-        filterConditions.category = category_id;
+        // UPDATE: Changed from 'category' to 'categories' to match your new schema!
+        // MongoDB will automatically search inside the array for this ID.
+        filterConditions.categories = category_id; 
+        
         // Delete it from queryObj so QueryBuilder doesn't process it redundantly
         delete queryObj.category_id;
     }
@@ -109,8 +142,8 @@ const getRelativeProducts = async (query: Record<string, string>) => {
 
     // 4. Create the base query with the applied filters and .select()
     const baseQuery = Product.find(filterConditions)
-        .select('_id name images slug description')
-        .populate('category');
+        .select('_id name images slug description basePrice') // Note: Added basePrice just in case you need it for the UI!
+        .populate('categories');
 
     // 5. Pass the pre-filtered query into the QueryBuilder
     const queryBuilder = new QueryBuilder(baseQuery, queryObj);
@@ -124,7 +157,7 @@ const getRelativeProducts = async (query: Record<string, string>) => {
         .paginate();
 
     const [data, meta] = await Promise.all([
-        products.build(), // or products.modelQuery depending on your setup
+        products.build(), 
         queryBuilder.getMeta()
     ]);
 
@@ -136,7 +169,7 @@ const getRelativeProducts = async (query: Record<string, string>) => {
 
 
 const getSingleProduct = async (slug: string) => {
-    const tour = await Product.findOne({ slug }).populate('category');
+    const tour = await Product.findOne({ slug }).populate('categories');
     return {
         data: tour,
     }

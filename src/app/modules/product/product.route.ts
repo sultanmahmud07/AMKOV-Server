@@ -18,14 +18,14 @@ router.post(
     "/create",
     checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
     multerUpload.fields([
-        { name: "images", maxCount: 10 },
-        { name: "featureImages", maxCount: 10 },
+        { name: "images", maxCount: 100 },
+        { name: "featureImages", maxCount: 100 },
         { name: "video", maxCount: 1 }
     ]),
     validateRequest(createProductZodSchema),
     ProductController.createProduct
 );
-
+// router.patch("/fix-order", ProductController.fixOrderDefaults);
 router.get(
     "/:slug",
     ProductController.getSingleProduct
@@ -34,8 +34,8 @@ router.patch(
     "/:id",
     checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
     multerUpload.fields([
-        { name: "images", maxCount: 10 },
-        { name: "featureImages", maxCount: 10 },
+        { name: "images", maxCount: 100 },
+        { name: "featureImages", maxCount: 100 },
         { name: "video", maxCount: 1 }
     ]),
     validateRequest(updateProductZodSchema),

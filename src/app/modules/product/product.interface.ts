@@ -25,7 +25,7 @@ export interface IProduct {
   featureImages?: string[];     // Images specifically for the Features tab
   basePrice: number; 
   variations: IProductVariation[];
-  category?: Types.ObjectId;
+  categories?: Types.ObjectId[];
   deleteImages?: string[];
   isFeatured?: boolean;
   isMenu?: boolean;

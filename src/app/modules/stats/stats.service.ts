@@ -209,7 +209,7 @@ export const getAdminStats = async () => {
   const recentProductsP = Product.find()
     .sort({ createdAt: -1 })
     .limit(5)
-    .populate("category", "name")
+    .populate("categories", "name")
     .lean();
 
   // ✅ Recent Users
