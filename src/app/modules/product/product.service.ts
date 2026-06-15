@@ -45,7 +45,6 @@ const getAllProducts = async (query: Record<string, string>) => {
     }
 
     // --- 3. POPULATE THE NEW ARRAY ---
-    // Update .populate('category') to .populate('categories')
     const queryBuilder = new QueryBuilder(Product.find().populate('categories'), queryObj);
 
     const products = await queryBuilder
@@ -126,8 +125,8 @@ const getRelativeProducts = async (query: Record<string, string>) => {
     if (category_id) {
         // UPDATE: Changed from 'category' to 'categories' to match your new schema!
         // MongoDB will automatically search inside the array for this ID.
-        filterConditions.categories = category_id; 
-        
+        filterConditions.categories = category_id;
+
         // Delete it from queryObj so QueryBuilder doesn't process it redundantly
         delete queryObj.category_id;
     }
@@ -157,7 +156,7 @@ const getRelativeProducts = async (query: Record<string, string>) => {
         .paginate();
 
     const [data, meta] = await Promise.all([
-        products.build(), 
+        products.build(),
         queryBuilder.getMeta()
     ]);
 

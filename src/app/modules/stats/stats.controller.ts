@@ -25,8 +25,6 @@ const getGuideStats = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
-
-
 const getAdminStats = catchAsync(async (req: Request, res: Response) => {
     const stats = await StatsService.getAdminStats();
     sendResponse(res, {
